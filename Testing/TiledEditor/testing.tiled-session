@@ -3,43 +3,72 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "Station.tsx",
+    "activeFile": "TransportDemo8.tmx",
     "expandedProjectPaths": [
         "."
     ],
     "fileStates": {
         "Station.tsx": {
-            "scaleInDock": 2,
+            "scaleInDock": 4,
             "scaleInEditor": 4
         },
+        "Station8.tsx": {
+            "dynamicWrapping": false,
+            "scaleInDock": 4,
+            "scaleInEditor": 8
+        },
         "TestStation.tmx": {
-            "scale": 4,
+            "scale": 1,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 319.625,
-                "y": 425.375
+                "x": 488.5,
+                "y": 480
+            }
+        },
+        "TransportDemo.tmx": {
+            "expandedObjectLayers": [
+                2
+            ],
+            "scale": 2,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 493.75,
+                "y": 112.5
+            }
+        },
+        "TransportDemo8.tmx": {
+            "scale": 4,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 191.875,
+                "y": 64
             }
         }
     },
-    "last.imagePath": "G:/My Drive/Thumby Projects/StarThumb/Testing/TiledEditor",
-    "map.height": 64,
+    "last.imagePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Testing/TiledEditor",
+    "map.height": 16,
     "map.lastUsedFormat": "tmx",
-    "map.tileHeight": 16,
-    "map.tileWidth": 16,
-    "map.width": 64,
+    "map.tileHeight": 8,
+    "map.tileWidth": 8,
+    "map.width": 32,
     "openFiles": [
         "Station.tsx",
-        "TestStation.tmx"
+        "TestStation.tmx",
+        "Station8.tsx",
+        "TransportDemo8.tmx"
     ],
     "project": "testing.tiled-project",
     "recentFiles": [
+        "Station.tsx",
         "TestStation.tmx",
-        "Station.tsx"
+        "Station8.tsx",
+        "TransportDemo8.tmx",
+        "TransportDemo.tmx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {
-        "height": 16,
-        "width": 16
+        "height": 8,
+        "width": 8
     },
     "tileset.useTransparentColor": true
 }

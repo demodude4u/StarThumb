@@ -48,34 +48,49 @@ def blitBuffered(buffer: ptr8, imp: ptr8, x: int, y: int, w: int, h: int):
     w = sx2 - sx1
     h = sy2 - sy1
 
-    sr = 72 - w
-
-    si = sy1*72+sx1
-    bi = 0
-    for _ in range(h):
-        for sx in range(sx1, sx2):
-            buffer[si] = imp[bi]
-            bi += 1
-            si += 1
-        si += sr
+    sx = sx1
+    for ix in range(w):
+        sy = sy1
+        for iy in range(h):
+            buffer[((sy >> 3)*72+sx)*8+(sy & 0b111)
+                   ] = imp[((iy >> 3)*w+ix)*8+(iy & 0b111)]
+            sy += 1
+        sx += 1
 
 
 @micropython.viper
-def bufferToScreen(buffer: ptr8):
+def bufferToScreen(buffer: ptr32):
     scrBW = ptr8(display.buffer)
     scrGS = ptr8(display.shading)
 
+    bi = 0
     so = 0
     for rowY in range(0, 40, 8):
         for x in range(0, 72):
             vBW = 0
             vGS = 0
             vm = 1
-            for y in range(rowY, rowY+8):
-                p = buffer[y*72+x]
-                if p & 0b01:
+            for _ in range(2):
+                v = buffer[bi]
+                bi += 1
+                if v & 0x00000001:
                     vBW |= vm
-                if p & 0b10:
+                if v & 0x00000002:
+                    vGS |= vm
+                vm <<= 1
+                if v & 0x00000100:
+                    vBW |= vm
+                if v & 0x00000200:
+                    vGS |= vm
+                vm <<= 1
+                if v & 0x00010000:
+                    vBW |= vm
+                if v & 0x00020000:
+                    vGS |= vm
+                vm <<= 1
+                if v & 0x01000000:
+                    vBW |= vm
+                if v & 0x02000000:
                     vGS |= vm
                 vm <<= 1
             scrBW[so] = vBW
@@ -99,14 +114,20 @@ bmpShip = [bytearray([0, 0, 128, 128, 160, 224, 208, 192, 144, 56, 56, 60, 60, 6
                       113, 116, 97, 99, 103, 111, 107, 111, 111, 77, 93, 29, 29, 25, 10, 10, 10, 34, 10, 12, 14, 14, 4, 69, 101, 97, 125, 124, 126, 120, 122, 114, 102, 110, 101, 109, 109, 109, 109, 101, 112, 124, 124, 124, 126, 126, 126, 127, 127])]
 
 
+# 8-bit indexed, VLSB pixel order
 def convertBMPtoIMP(width, height, bmp):
-    ret = bytearray(width * height)
-    for y in range(height):
+    paddedHeight = 8 * ((height + 7) // 8)
+    ret = bytearray(width * paddedHeight)
+    i = 0
+    for rowY in range(0, height, 8):
         for x in range(width):
-            o = (y >> 3) * width + x
-            m = 1 << (y & 7)
-            ret[y * width + x] = (0b10 if (bmp[1][o] & m)
-                                  else 0) | (0b01 if (bmp[0][o] & m) else 0)
+            o = (rowY >> 3) * width + x
+            m = 1
+            for _ in range(8):
+                ret[i] = (0b10 if (bmp[1][o] & m) else 0) | (
+                    0b01 if (bmp[0][o] & m) else 0)
+                m <<= 1
+                i += 1
     return ret
 
 
