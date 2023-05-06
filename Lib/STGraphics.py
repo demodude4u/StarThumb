@@ -53,6 +53,8 @@ sin_values_f10 = array('i', [int(math.sin(math.radians(x))
 cos_values_f10 = array('i', [int(math.cos(math.radians(x))
                                  * 1024) for x in range(-90, 91)])
 
+dir_x_flip = bytearray([4, 3, 2, 1, 0, 7, 6, 5])
+
 
 def _readPPMHeader(file):
     if file.readline().rstrip() != b'P6':
@@ -118,8 +120,6 @@ def loadIMP(color_filename, shading_filename):
                 shiny, directional, normal = shading_map.get(
                     (sr << 16) | (sg << 8) | sb, (0, 0, 0))
 
-                # print(x, y, "|", cr, cg, cb, "|", sr, sg, sb, ">>>", color, shiny, directional, normal)
-
                 buffer[i] = color | (shiny << 2) | (
                     normal << 3) | (directional << 6) | 0b10000000
 
@@ -130,22 +130,29 @@ def loadShader(shader_filename):
     # ppm binary file format
 
     color_map = {0: 0, 255: 1, 162: 3, 78: 2}
+    row_map = [3, 0, 2, 1, 7, 4, 6, 5]
+    column_map = [0, 1, 2, 3, 4, 3, 2, 1]
 
     with open(shader_filename, 'rb') as shader_file:
         width, height = _readPPMHeader(shader_file)[:2]
 
-        if width != 8 or height != 8:
+        if width != 5 or height != 8:
             raise ValueError("Invalid shader image dimensions")
 
+        colorData = bytearray(5*8)
+        for i in range(5*8):
+            cr, cg, cb = shader_file.read(3)
+            colorData[i] = color_map.get(cg, 0)
+
         shader_array = array('H', [0] * 8)  # 8 16-bit values
-        for i in range(8):
+        for sy in range(8):
             shader_value = 0
-            for j in range(8):
-                cr, cg, cb = shader_file.read(3)
-                color = color_map.get(cg, 0)
-                shader_value |= color << (2 * j)
-            shader_array[i] = shader_value
-            print(shader_value)
+            cy = row_map[sy]
+            for sx in range(8):
+                cx = column_map[sx]
+                color = colorData[cy*5+cx]
+                shader_value |= color << (2 * sx)
+            shader_array[sy] = shader_value
 
     return shader_array
 
@@ -190,11 +197,16 @@ def blit(buffer: ptr8, imp: ptr8, x: int, y: int, w: int, h: int):
 
 @micropython.viper
 def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: int, pivotX: int, pivotY: int):
-    if angle <= 90:
+    dirFlip = ptr8(dir_x_flip)
+
+    dirDelta = ((angle + 22) // 45) & 0b111
+
+    if angle < 90:
         ra, mx = angle, 0
     elif angle <= 270:
         ra, mx = 180 - angle, 1
         x -= 2 * ((w >> 1) - pivotX)
+        dirDelta = dirFlip[dirDelta]
     else:
         ra, mx = angle - 360, 0
 
@@ -220,7 +232,14 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
             if not v & IMP_ALPHA:
                 continue
 
-            # TODO rotate directionals
+            if v & IMP_DIR:
+                d1 = ((v & IMP_NORMAL) >> 3)
+                d2 = (d1 + dirDelta) & 0b111
+                if mx:
+                    d3 = dirFlip[d2]
+                else:
+                    d3 = d2
+                v = (v & IMP_NORMAL_INV) | (d3 << 3)
 
             if rmode == 0:  # Shear-based rotation for larger angles
                 dx = srcX - pivotX
@@ -238,7 +257,7 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
                 ry = srcY
 
             elif rmode == 2:  # Quick rotate 90
-                rx = pivotX + srcY - pivotY
+                rx = pivotX - srcY + pivotY
                 ry = pivotY + srcX - pivotX
 
             elif rmode == 3:  # Quick rotate -90
@@ -266,12 +285,13 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
 
 
 @micropython.viper
-def postShading(buffer: ptr8, shader: ptr8, light: int):
+def postShading(buffer: ptr8, shader: ptr16, light: int):
     width = 72
     height = 40
 
     pixel_count = width * height
 
+    df = True
     for i in range(pixel_count):
         pixel = buffer[i]
 
@@ -286,6 +306,9 @@ def postShading(buffer: ptr8, shader: ptr8, light: int):
 
         shading_color = (shading_rule >> (
             2 * ((light - normal + 8) & 0b111))) & 0x03
+
+        if df and (pixel & 0b111 == 0b011) and (normal == 0):
+            df = False
 
         buffer[i] = (pixel & 0b11111100) | shading_color
 

@@ -22,7 +22,7 @@
 </data>
  </layer>
  <objectgroup id="2" name="Object Layer 1">
-  <object id="1" name="1x" x="190.75" y="-44.5" width="72" height="40"/>
+  <object id="1" name="1x" x="192.25" y="-48.25" width="72" height="40"/>
   <object id="2" name="0.5x" x="147.5" y="-23.5" width="36" height="20"/>
   <object id="3" name="2x" x="269.75" y="-85.25" width="144" height="80"/>
  </objectgroup>

@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="9" height="5" tilewidth="8" tileheight="8" infinite="0" nextlayerid="2" nextobjectid="1">
+ <tileset firstgid="1" source="Station8.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="9" height="5">
+  <data encoding="csv">
+55,56,30,122,5,33,34,35,36,
+63,64,38,16,32,41,42,43,44,
+71,72,2,7,47,51,1,73,74,
+79,80,76,77,77,62,20,103,104,
+87,88,17,129,129,67,28,111,112
+</data>
+ </layer>
+</map>
