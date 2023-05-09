@@ -69,7 +69,63 @@ def _readPPMHeader(file):
                 return ret[0], ret[1], ret[2]
 
 
-def loadIMP(color_filename, shading_filename):
+# def loadImpPPM(color_filename, shading_filename):
+#     # ppm binary file format
+
+#     color_map = {0: 0, 255: 1, 162: 3, 78: 2}
+#     shading_map = {
+#         0x4040da: (0, 1, 5),
+#         0x8025da: (0, 1, 6),
+#         0xc040da: (0, 1, 7),
+#         0x2580da: (0, 1, 4),
+#         0x8080ff: (0, 0, 0),
+#         0xda80da: (0, 1, 0),
+#         0x40c0da: (0, 1, 3),
+#         0x80dada: (0, 1, 2),
+#         0xc0c0da: (0, 1, 1),
+#         0x1e1e74: (1, 1, 5),
+#         0x420f74: (1, 1, 6),
+#         0x661e74: (1, 1, 7),
+#         0x0f4274: (1, 1, 4),
+#         0x424289: (0, 0, 0),
+#         0x744274: (1, 1, 0),
+#         0x1e6674: (1, 1, 3),
+#         0x427474: (1, 1, 2),
+#         0x666674: (1, 1, 1),
+#         0xffffff: (1, 0, 0),
+#         0xa2a2a2: (1, 0, 0),
+#         0x4e4e4e: (1, 0, 0),
+#         0x000000: (1, 0, 0)
+#     }
+
+#     with open(color_filename, 'rb') as color_file, open(shading_filename, 'rb') as shading_file:
+#         width, height = _readPPMHeader(color_file)[:2]
+#         _ = _readPPMHeader(shading_file)
+
+#         paddedHeight = 8 * ((height + 7) // 8)
+#         buffer = bytearray(width * paddedHeight)
+#         for y in range(height):
+#             for x in range(width):
+#                 i = ((y >> 3)*width+x)*8+(y & 0b111)
+
+#                 cr, cg, cb = color_file.read(3)
+#                 sr, sg, sb = shading_file.read(3)
+
+#                 is_transparent = (cr, cg, cb) not in (
+#                     (0, 0, 0), (78, 78, 78), (162, 162, 162), (255, 255, 255))
+#                 if is_transparent:
+#                     continue
+
+#                 color = color_map.get(cg, 0)
+#                 shiny, directional, normal = shading_map.get(
+#                     (sr << 16) | (sg << 8) | sb, (0, 0, 0))
+
+#                 buffer[i] = color | (shiny << 2) | (
+#                     normal << 3) | (directional << 6) | 0b10000000
+
+#         return (buffer, width, height)
+
+def loadImpPPM(color_filename, shading_filename=None):
     # ppm binary file format
 
     color_map = {0: 0, 255: 1, 162: 3, 78: 2}
@@ -98,18 +154,22 @@ def loadIMP(color_filename, shading_filename):
         0x000000: (1, 0, 0)
     }
 
-    with open(color_filename, 'rb') as color_file, open(shading_filename, 'rb') as shading_file:
+    with open(color_filename, 'rb') as color_file:
         width, height = _readPPMHeader(color_file)[:2]
-        _ = _readPPMHeader(shading_file)
+
+        shading_file = None
+        if shading_filename is not None:
+            shading_file = open(shading_filename, 'rb')
+            _ = _readPPMHeader(shading_file)
 
         paddedHeight = 8 * ((height + 7) // 8)
         buffer = bytearray(width * paddedHeight)
         for y in range(height):
             for x in range(width):
-                i = ((y >> 3)*width+x)*8+(y & 0b111)
-
                 cr, cg, cb = color_file.read(3)
-                sr, sg, sb = shading_file.read(3)
+
+                sr, sg, sb = (shading_file.read(
+                    3) if shading_file else (cr, cg, cb))
 
                 is_transparent = (cr, cg, cb) not in (
                     (0, 0, 0), (78, 78, 78), (162, 162, 162), (255, 255, 255))
@@ -120,41 +180,14 @@ def loadIMP(color_filename, shading_filename):
                 shiny, directional, normal = shading_map.get(
                     (sr << 16) | (sg << 8) | sb, (0, 0, 0))
 
+                i = ((y >> 3)*width+x)*8+(y & 0b111)
                 buffer[i] = color | (shiny << 2) | (
                     normal << 3) | (directional << 6) | 0b10000000
 
+        if shading_file:
+            shading_file.close()
+
         return (buffer, width, height)
-
-
-def loadShader(shader_filename):
-    # ppm binary file format
-
-    color_map = {0: 0, 255: 1, 162: 3, 78: 2}
-    row_map = [3, 0, 2, 1, 7, 4, 6, 5]
-    column_map = [0, 1, 2, 3, 4, 3, 2, 1]
-
-    with open(shader_filename, 'rb') as shader_file:
-        width, height = _readPPMHeader(shader_file)[:2]
-
-        if width != 5 or height != 8:
-            raise ValueError("Invalid shader image dimensions")
-
-        colorData = bytearray(5*8)
-        for i in range(5*8):
-            cr, cg, cb = shader_file.read(3)
-            colorData[i] = color_map.get(cg, 0)
-
-        shader_array = array('H', [0] * 8)  # 8 16-bit values
-        for sy in range(8):
-            shader_value = 0
-            cy = row_map[sy]
-            for sx in range(8):
-                cx = column_map[sx]
-                color = colorData[cy*5+cx]
-                shader_value |= color << (2 * sx)
-            shader_array[sy] = shader_value
-
-    return shader_array
 
 
 def convertBMP(width, height, bmp, mask=None):
@@ -178,16 +211,18 @@ def convertBMP(width, height, bmp, mask=None):
 
 @micropython.viper
 def blit(buffer: ptr8, imp: ptr8, x: int, y: int, w: int, h: int):
-    x1, x2 = int(max(0, x)), int(min(BUF_W, x+w))
-    y1, y2 = int(max(0, y)), int(min(BUF_H, y+h))
+    dx1, dx2 = int(max(0, x)), int(min(BUF_W, x+w))
+    dy1, dy2 = int(max(0, y)), int(min(BUF_H, y+h))
 
-    w = x2 - x1
-    h = y2 - y1
+    sx1 = dx1 - x
+    sx2 = sx1 + dx2 - dx1
+    sy1 = dy1 - y
+    sy2 = sy1 + dy2 - dy1
 
-    dstX = x1
-    for srcX in range(w):
-        dstY = y1
-        for srcY in range(h):
+    dstX = dx1
+    for srcX in range(sx1, sx2):
+        dstY = dy1
+        for srcY in range(sy1, sy2):
             v = imp[((srcY >> 3)*w+srcX)*8+(srcY & 0b111)]
             if v & IMP_ALPHA:
                 buffer[((dstY >> 3)*72+dstX)*8+(dstY & 0b111)] = v
@@ -282,35 +317,6 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
 
             if 0 <= dstX < 72 and 0 <= dstY < 40:
                 buffer[((dstY >> 3)*72+dstX)*8+(dstY & 0b111)] = v
-
-
-@micropython.viper
-def postShading(buffer: ptr8, shader: ptr16, light: int):
-    width = 72
-    height = 40
-
-    pixel_count = width * height
-
-    df = True
-    for i in range(pixel_count):
-        pixel = buffer[i]
-
-        if not (pixel & 0b10000000):  # Transparent
-            continue
-
-        if not (pixel & 0b01000000):  # Flat
-            continue
-
-        shading_rule = shader[pixel & 0b111]
-        normal = (pixel >> 3) & 0b111
-
-        shading_color = (shading_rule >> (
-            2 * ((light - normal + 8) & 0b111))) & 0x03
-
-        if df and (pixel & 0b111 == 0b011) and (normal == 0):
-            df = False
-
-        buffer[i] = (pixel & 0b11111100) | shading_color
 
 
 @micropython.viper

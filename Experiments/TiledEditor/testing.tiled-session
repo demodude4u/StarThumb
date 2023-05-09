@@ -28,6 +28,14 @@
                 "y": 477
             }
         },
+        "TileShadeTest.tmx": {
+            "scale": 8,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 34.25,
+                "y": 13.75
+            }
+        },
         "TransportDemo.tmx": {
             "expandedObjectLayers": [
                 2
@@ -46,13 +54,15 @@
             "scale": 4,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 254.375,
-                "y": 38
+                "x": 253,
+                "y": 64.25
             }
         }
     },
+    "last.exportedFilePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Experiments/TiledEditor",
     "last.imagePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Testing/TiledEditor",
     "map.height": 5,
+    "map.lastUsedExportFilter": "CSV files (*.csv)",
     "map.lastUsedFormat": "tmx",
     "map.tileHeight": 8,
     "map.tileWidth": 8,

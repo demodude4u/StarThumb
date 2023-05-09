@@ -20,6 +20,7 @@ impShip = convertBMP(25, 12, bmpShip, bmpShipMask)
 angle = 0
 pivotX = 12
 pivotFwd = True
+x, y = 18-(25 >> 1), 20-(12 >> 1)
 while True:
     angle = (angle + 5) % 360
     # if buttonU.justPressed():
@@ -42,6 +43,15 @@ while True:
     #     pivotX += 1
     # print(pivotX)
 
+    if buttonU.pressed():
+        y -= 1
+    if buttonD.pressed():
+        y += 1
+    if buttonL.pressed():
+        x -= 1
+    if buttonR.pressed():
+        x += 1
+
     # perf.start()
     # impShip = convertBMP(25, 12, bmpShip, bmpShipMask)
     # perf.stop()
@@ -51,7 +61,7 @@ while True:
     perf.stop()
 
     perf.start()
-    blit(buffer, impShip, 18-(25 >> 1), 20-(12 >> 1), 25, 12)
+    blit(buffer, impShip, x, y, 25, 12)
     perf.stop()
 
     perf.start()

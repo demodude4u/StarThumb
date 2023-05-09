@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <tileset version="1.10" tiledversion="1.10.1" name="Station8" tilewidth="8" tileheight="8" tilecount="256" columns="8">
- <image source="StationTiles8Shading.png" trans="ff00ff" width="64" height="256"/>
+ <image source="StationTiles8Color.png" trans="008000" width="64" height="256"/>
  <tile id="0" probability="1000"/>
  <tile id="1" probability="1000"/>
  <tile id="2" probability="1000"/>
