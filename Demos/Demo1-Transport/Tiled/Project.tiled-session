@@ -1,0 +1,56 @@
+{
+    "Map/SizeTest": {
+        "height": 4300,
+        "width": 2
+    },
+    "activeFile": "Map.tmx",
+    "expandedProjectPaths": [
+        "."
+    ],
+    "fileStates": {
+        "Map.tmx": {
+            "scale": 11,
+            "selectedLayer": 1,
+            "viewCenter": {
+                "x": 192,
+                "y": 63.95454545454545
+            }
+        },
+        "Station8.tsx": {
+            "scaleInDock": 1
+        },
+        "Tiles.tsx": {
+            "scaleInDock": 5.5,
+            "scaleInEditor": 5.5
+        },
+        "TransportDemo8.tmx": {
+            "scale": 2.7213541666666665,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 179.13875598086122,
+                "y": 91.49856459330145
+            }
+        }
+    },
+    "last.exportedFilePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport",
+    "last.externalTilesetPath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled",
+    "last.imagePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled",
+    "map.lastUsedExportFilter": "CSV files (*.csv)",
+    "openFiles": [
+        "Tiles.tsx",
+        "Map.tmx"
+    ],
+    "project": "Project.tiled-project",
+    "recentFiles": [
+        "Tiles.tsx",
+        "Map.tmx",
+        "TransportDemo8.tmx"
+    ],
+    "tileset.lastUsedFormat": "tsx",
+    "tileset.tileSize": {
+        "height": 8,
+        "width": 8
+    },
+    "tileset.transparentColor": "#008000",
+    "tileset.useTransparentColor": true
+}

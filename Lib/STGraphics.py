@@ -128,6 +128,10 @@ def _readPPMHeader(file):
 def loadImpPPM(color_filename, shading_filename=None):
     # ppm binary file format
 
+    print("Loading", color_filename)
+    if shading_filename:
+        print("Loading", shading_filename)
+
     color_map = {0: 0, 255: 1, 162: 3, 78: 2}
     shading_map = {
         0x4040da: (0, 1, 5),
@@ -213,6 +217,9 @@ def convertBMP(width, height, bmp, mask=None):
 def blit(buffer: ptr8, imp: ptr8, x: int, y: int, w: int, h: int):
     dx1, dx2 = int(max(0, x)), int(min(BUF_W, x+w))
     dy1, dy2 = int(max(0, y)), int(min(BUF_H, y+h))
+
+    if dx1 == dx2 or dy1 == dy2:
+        return
 
     sx1 = dx1 - x
     sx2 = sx1 + dx2 - dx1
@@ -313,6 +320,30 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
                 dstX = x + (w - rx)
             else:
                 dstX = x + rx
+            dstY = y + ry
+
+            if 0 <= dstX < 72 and 0 <= dstY < 40:
+                buffer[((dstY >> 3)*72+dstX)*8+(dstY & 0b111)] = v
+
+
+@micropython.viper
+def blitScale(buffer: ptr8, imp: ptr8, scale_f6: int, x: int, y: int, w: int, h: int, pivotX: int, pivotY: int):
+    for srcY in range(h):
+        for srcX in range(w):
+            v = imp[((srcY >> 3)*w+srcX)*8+(srcY & 0b111)]
+            if not v & IMP_ALPHA:
+                continue
+
+            dx = srcX - pivotX
+            dy = srcY - pivotY
+
+            rx = (scale_f6 * dx) >> 6
+            ry = (scale_f6 * dy) >> 6
+
+            rx += pivotX
+            ry += pivotY
+
+            dstX = x + rx
             dstY = y + ry
 
             if 0 <= dstX < 72 and 0 <= dstY < 40:

@@ -27,29 +27,6 @@ def stop():
         _count += 1
 
 
-# @micropython.viper
-# def render():
-#     global _times, _count
-#     bufBW = ptr8(display.buffer)
-#     bufGS = ptr8(display.shading)
-#     bd = ptr8(bmpDigits)
-#     so = 0
-#     for i in range(int(_count)):
-#         text = str(_times[i])
-#         o = so
-#         for c in text:
-#             d = (int(ord(c)) - 48) * 3
-#             for _ in range(3):
-#                 bufBW[o] = (bufBW[o] & 0b11000000) | bd[d]
-#                 bufGS[o] &= 0b11000000
-#                 o += 1
-#                 d += 1
-#             bufBW[o] &= 0b11000000
-#             bufGS[o] &= 0b11000000
-#             o += 1
-#         so += 72
-#     _count = 0
-
 @micropython.viper
 def render():
     global _times, _count
@@ -59,24 +36,25 @@ def render():
     so = 0
     for i in range(int(_count)):
         num = int(_times[i])
+        ndc = num
         num_digits = 1
-        while num >= 10:
-            num //= 10
+        while ndc >= 10:
+            ndc //= 10
             num_digits += 1
-        o = so + (num_digits * 9) - 1
+        o = so + (num_digits * 4) - 1
         while True:
+            bufBW[o] &= 0b11000000
+            bufGS[o] &= 0b11000000
+            o -= 1
             digit = num % 10
-            d = digit * 3
+            d = digit * 3 + 2
             for _ in range(3):
                 bufBW[o] = (bufBW[o] & 0b11000000) | bd[d]
                 bufGS[o] &= 0b11000000
                 o -= 1
-                d += 1
-            bufBW[o] &= 0b11000000
-            bufGS[o] &= 0b11000000
-            o -= 1
+                d -= 1
+            num //= 10
             if num == 0:
                 break
-            num //= 10
-        so += num_digits * 9
+        so += 72
     _count = 0

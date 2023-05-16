@@ -1,7 +1,7 @@
 
 from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR
 
-from STGraphics import convertBMP, fill, blit, blitRotate, display, update
+from STGraphics import convertBMP, fill, blit, blitRotate, blitScale, display, update
 
 import perf
 
@@ -18,9 +18,10 @@ buffer = bytearray(72*40)
 impShip = convertBMP(25, 12, bmpShip, bmpShipMask)
 
 angle = 0
+scale_f6 = 64
 pivotX = 12
 pivotFwd = True
-x, y = 18-(25 >> 1), 20-(12 >> 1)
+x, y = 18-(25 >> 1), 10-(12 >> 1)
 while True:
     angle = (angle + 5) % 360
     # if buttonU.justPressed():
@@ -52,6 +53,11 @@ while True:
     if buttonR.pressed():
         x += 1
 
+    if buttonB.pressed() and scale_f6 > 32:
+        scale_f6 -= 1
+    if buttonA.pressed() and scale_f6 < 64:
+        scale_f6 += 1
+
     # perf.start()
     # impShip = convertBMP(25, 12, bmpShip, bmpShipMask)
     # perf.stop()
@@ -69,9 +75,13 @@ while True:
     perf.stop()
 
     perf.start()
+    blitScale(buffer, impShip, scale_f6, 6, 24, 25, 12, 12, 6)
+    perf.stop()
+
+    perf.start()
     display(buffer)
     perf.stop()
 
-    perf.render()
+    # perf.render()
 
     update()

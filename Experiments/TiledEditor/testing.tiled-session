@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "TransportDemo8.tmx",
+    "activeFile": "Station8.tsx",
     "expandedProjectPaths": [
         "."
     ],
@@ -13,7 +13,7 @@
             "scaleInEditor": 4
         },
         "Station8.tsx": {
-            "scaleInDock": 1,
+            "scaleInDock": 4,
             "scaleInEditor": 11
         },
         "StationBlobTest.tsx": {
@@ -52,10 +52,10 @@
                 2
             ],
             "scale": 4,
-            "selectedLayer": 1,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 253,
-                "y": 64.25
+                "x": 182,
+                "y": 72.25
             }
         }
     },
@@ -68,20 +68,19 @@
     "map.tileWidth": 8,
     "map.width": 9,
     "openFiles": [
-        "Station.tsx",
-        "TestStation.tmx",
-        "TransportDemo.tmx",
         "TransportDemo8.tmx",
-        "Station8.tsx"
+        "Station8.tsx",
+        "TileShadeTest.tmx"
     ],
     "project": "testing.tiled-project",
     "recentFiles": [
+        "TileShadeTest.tmx",
+        "Station8.tsx",
+        "TransportDemo8.tmx",
         "StationBlobTest.tsx",
         "TestStation.tmx",
         "TransportDemo.tmx",
-        "Station.tsx",
-        "Station8.tsx",
-        "TransportDemo8.tmx"
+        "Station.tsx"
     ],
     "tileset.lastUsedFormat": "tsx",
     "tileset.tileSize": {

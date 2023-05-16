@@ -1,13 +1,41 @@
-
-TILE_SIZE = const(8)
-
-
 class Container:
     def __init__(self, columns, rows, map, impTiles):
         self.columns = columns
         self.rows = rows
         self.map = map
         self.impTiles = impTiles
+        self.sprites = []
+        self.slowZones = []
+        self.pads = []
+        self.docks = []
+        self.largeTexts = []
+        self.smallTexts = []
+        self.scanners = []
+        self.gates = []
+
+    def initSprite(self, imp, x, y):
+        self.sprites.append((imp[0], x, y, imp[1], imp[2]))
+
+    def initSlowZone(self, x, y, w, h):
+        self.slowZones.append((x, y, w, h))
+
+    def initPad(self, x, y, dir):
+        self.pads.append((x, y, dir))
+
+    def initDock(self, x, y, dir):
+        self.docks.append((x, y, dir))
+
+    def initLargeText(self, text, x, y, dir, color):
+        self.largeTexts.append((text, x, y, dir, color))
+
+    def initSmallText(self, text, x, y, dir, color):
+        self.smallTexts.append((text, x, y, dir, color))
+
+    def initScanner(self, x, y, w, h):
+        self.scanners.append((x, y, w, h))
+
+    def initGate(self, x, y, dir):
+        self.gates.append((x, y, dir))
 
 
 def loadMapCSV(filename):
@@ -22,9 +50,36 @@ def loadMapCSV(filename):
         return (bytearray(data), width, height)
 
 
-# perf 3850
+objectDefs = {
+    "SZ": lambda con, obj: con.initSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
+    "P": lambda con, obj: con.initPad(x=obj[1], y=obj[2], dir=obj[3]),
+    "D": lambda con, obj: con.initDock(x=obj[1], y=obj[2], dir=obj[3]),
+    "LT": lambda con, obj: con.initLargeText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4], color=obj[5]),
+    "ST": lambda con, obj: con.initSmallText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4], color=obj[5]),
+    "S": lambda con, obj: con.initScanner(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
+    "G": lambda con, obj: con.initGate(x=obj[1], y=obj[2], dir=obj[3])
+}
+
+
+def loadObjectsCSV(container, filename):
+    global objectDefs
+    with open(filename, 'r') as f:
+        lines = f.readlines()
+        for line in lines:
+            obj = []
+            for cell in line.strip().split(','):
+                try:
+                    obj.append(int(cell))
+                except ValueError:
+                    obj.append(cell)
+            if len(obj) > 0:
+                init = objectDefs.get(obj[0], None)
+                if init:
+                    init(container, obj)
+
+
 @micropython.viper
-def blitContainer(buffer: ptr8, container, x: int, y: int):
+def blitContainerMap(buffer: ptr8, container, x: int, y: int):
     columns = int(container.columns)
     rows = int(container.rows)
     map = ptr8(container.map)
@@ -40,6 +95,7 @@ def blitContainer(buffer: ptr8, container, x: int, y: int):
     sy1 = dy1 - y
     sy2 = sy1 + dy2 - dy1
 
+    # TODO reduce map and tile lookups by iterating tile by tile
     dstX = dx1
     for srcX in range(sx1, sx2):
         dstY = dy1
