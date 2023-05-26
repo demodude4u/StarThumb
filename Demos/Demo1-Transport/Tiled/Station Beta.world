@@ -1,0 +1,27 @@
+{
+    "maps": [
+        {
+            "fileName": "Beta Port.tmx",
+            "height": 128,
+            "width": 144,
+            "x": 0,
+            "y": 0
+        },
+        {
+            "fileName": "Beta Connector.tmx",
+            "height": 80,
+            "width": 64,
+            "x": -64,
+            "y": 24
+        },
+        {
+            "fileName": "Beta Gates.tmx",
+            "height": 128,
+            "width": 64,
+            "x": -128,
+            "y": 0
+        }
+    ],
+    "onlyShowAdjacentMaps": false,
+    "type": "world"
+}

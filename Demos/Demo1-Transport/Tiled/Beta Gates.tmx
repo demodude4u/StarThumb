@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="8" height="16" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#181818" nextlayerid="11" nextobjectid="55">
+ <editorsettings>
+  <export target="../Map.tmj" format="json"/>
+ </editorsettings>
+ <tileset firstgid="1" source="Tiles.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="8" height="16">
+  <data encoding="csv">
+84,0,0,0,0,0,0,86,
+91,0,0,0,0,0,0,91,
+91,83,0,0,0,0,83,91,
+91,91,0,0,0,0,91,100,
+91,91,82,0,0,0,100,109,
+91,91,137,158,0,0,0,0,
+91,91,138,141,155,155,131,155,
+91,91,134,153,144,0,137,0,
+91,91,134,153,152,0,137,0,
+91,91,138,141,155,155,147,155,
+91,91,137,160,0,0,0,0,
+91,91,90,0,0,0,84,109,
+91,91,0,0,0,0,91,84,
+91,99,0,0,0,0,99,91,
+91,0,0,0,0,0,0,91,
+100,0,0,0,0,0,0,102
+</data>
+ </layer>
+ <objectgroup id="2" name="Object Layer 1">
+  <object id="15" name="ST" x="57" y="94" width="19" height="3" rotation="90">
+   <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">ALPHA</text>
+  </object>
+  <object id="16" name="ST" x="57" y="14" width="19" height="3" rotation="90">
+   <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">GAMMA</text>
+  </object>
+  <object id="34" name="G" x="32" y="8">
+   <properties>
+    <property name="Facing" type="int" propertytype="Cardinal" value="3"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="36" name="G" x="32" y="120">
+   <properties>
+    <property name="Facing" type="int" propertytype="Cardinal" value="1"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+ <objectgroup id="10" name="References"/>
+</map>

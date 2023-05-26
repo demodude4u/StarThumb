@@ -1,0 +1,20 @@
+{
+    "maps": [
+        {
+            "fileName": "Gamma Port.tmx",
+            "height": 152,
+            "width": 144,
+            "x": 0,
+            "y": 0
+        },
+        {
+            "fileName": "Gamma Gate.tmx",
+            "height": 104,
+            "width": 64,
+            "x": 40,
+            "y": 152
+        }
+    ],
+    "onlyShowAdjacentMaps": false,
+    "type": "world"
+}

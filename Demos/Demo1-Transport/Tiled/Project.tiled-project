@@ -8,5 +8,18 @@
         "."
     ],
     "propertyTypes": [
+        {
+            "id": 3,
+            "name": "Cardinal",
+            "storageType": "int",
+            "type": "enum",
+            "values": [
+                "East",
+                "South",
+                "West",
+                "North"
+            ],
+            "valuesAsFlags": false
+        }
     ]
 }

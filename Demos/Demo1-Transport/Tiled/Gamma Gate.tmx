@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="8" height="13" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#181818" nextlayerid="11" nextobjectid="58">
+ <editorsettings>
+  <export target="../Map.tmj" format="json"/>
+ </editorsettings>
+ <tileset firstgid="1" source="Tiles.tsx"/>
+ <layer id="1" name="Tile Layer 1" width="8" height="13">
+  <data encoding="csv">
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,99,0,0,0,0,99,91,
+91,0,0,0,0,0,0,91,
+100,0,0,0,0,0,0,102
+</data>
+ </layer>
+ <objectgroup id="2" name="Object Layer 1">
+  <object id="55" name="ST" x="57" y="74" width="15" height="3" rotation="90">
+   <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">BETA</text>
+  </object>
+  <object id="56" name="G" x="32" y="96">
+   <properties>
+    <property name="Facing" type="int" propertytype="Cardinal" value="1"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="57" name="ST" x="9" y="74" width="15" height="3" rotation="90">
+   <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">BETA</text>
+  </object>
+ </objectgroup>
+ <objectgroup id="10" name="References" visible="0"/>
+</map>
