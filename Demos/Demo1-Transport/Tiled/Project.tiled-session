@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "Alpha Gate.tmx",
+    "activeFile": "Tiles.tsx",
     "expandedProjectPaths": [
         "."
     ],
@@ -47,11 +47,11 @@
                 2,
                 10
             ],
-            "scale": 3,
+            "scale": 4,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 66.66666666666667,
-                "y": 57.16666666666666
+                "x": 6.25,
+                "y": 49.875
             }
         },
         "Beta Gates.tmx": {
@@ -59,10 +59,10 @@
                 2
             ],
             "scale": 3,
-            "selectedLayer": 2,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 130.66666666666663,
-                "y": 81.5
+                "x": 122.33333333333331,
+                "y": 105.16666666666666
             }
         },
         "Beta Port.tmx": {
@@ -125,8 +125,8 @@
             "scale": 11,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 15.363636363636367,
-                "y": -20.13636363636364
+                "x": 15.090909090909093,
+                "y": -20.772727272727273
             }
         },
         "Station8.tsx": {
@@ -134,7 +134,7 @@
         },
         "Tiles.tsx": {
             "scaleInDock": 4,
-            "scaleInEditor": 5.5
+            "scaleInEditor": 4
         },
         "TransportDemo8.tmx": {
             "scale": 2.7213541666666665,
@@ -160,6 +160,7 @@
     "map.tileHeight": 8,
     "map.tileWidth": 8,
     "openFiles": [
+        "Star System.tmx",
         "Alpha Gate.tmx",
         "Alpha Port.tmx",
         "Beta Port.tmx",
@@ -167,19 +168,19 @@
         "Beta Connector.tmx",
         "Gamma Port.tmx",
         "Gamma Gate.tmx",
-        "Star System.tmx"
+        "Tiles.tsx"
     ],
     "project": "Project.tiled-project",
     "property.type": "GateTravel",
     "recentFiles": [
         "Star System.tmx",
-        "Gamma Gate.tmx",
-        "Gamma Port.tmx",
-        "Beta Connector.tmx",
-        "Beta Gates.tmx",
-        "Beta Port.tmx",
-        "Alpha Port.tmx",
         "Alpha Gate.tmx",
+        "Alpha Port.tmx",
+        "Beta Port.tmx",
+        "Beta Gates.tmx",
+        "Beta Connector.tmx",
+        "Gamma Port.tmx",
+        "Gamma Gate.tmx",
         "Tiles.tsx",
         "Alpha Connector.tmx",
         "Gamma Connector.tmx",

@@ -38,7 +38,7 @@ with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
 pack.file = None
 pack = None
 gc.collect()
-print("After pack:", gc.mem_free())
+# print("After pack:",gc.mem_free())
 
 from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR  # NOQA
 

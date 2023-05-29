@@ -16,10 +16,10 @@
         },
         {
             "fileName": "Beta Gates.tmx",
-            "height": 128,
+            "height": 192,
             "width": 64,
             "x": -128,
-            "y": 0
+            "y": -32
         }
     ],
     "onlyShowAdjacentMaps": false,

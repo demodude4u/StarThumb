@@ -1,14 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="8" height="16" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#181818" nextlayerid="11" nextobjectid="55">
+<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="8" height="24" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#181818" nextlayerid="11" nextobjectid="57">
  <editorsettings>
   <export target="../Map.tmj" format="json"/>
  </editorsettings>
  <tileset firstgid="1" source="Tiles.tsx"/>
- <layer id="1" name="Tile Layer 1" width="8" height="16">
+ <layer id="1" name="Tile Layer 1" width="8" height="24">
   <data encoding="csv">
 84,0,0,0,0,0,0,86,
 91,0,0,0,0,0,0,91,
 91,83,0,0,0,0,83,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
 91,91,0,0,0,0,91,100,
 91,91,82,0,0,0,100,109,
 91,91,137,158,0,0,0,0,
@@ -19,16 +23,20 @@
 91,91,137,160,0,0,0,0,
 91,91,90,0,0,0,84,109,
 91,91,0,0,0,0,91,84,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
+91,91,0,0,0,0,91,91,
 91,99,0,0,0,0,99,91,
 91,0,0,0,0,0,0,91,
 100,0,0,0,0,0,0,102
 </data>
  </layer>
  <objectgroup id="2" name="Object Layer 1">
-  <object id="15" name="ST" x="57" y="94" width="19" height="3" rotation="90">
+  <object id="15" name="ST" x="57" y="158" width="19" height="3" rotation="90">
    <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">ALPHA</text>
   </object>
-  <object id="16" name="ST" x="57" y="14" width="19" height="3" rotation="90">
+  <object id="16" name="ST" x="57" y="15" width="19" height="3" rotation="90">
    <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">GAMMA</text>
   </object>
   <object id="34" name="G" x="32" y="8">
@@ -38,13 +46,19 @@
    </properties>
    <point/>
   </object>
-  <object id="36" name="G" x="32" y="120">
+  <object id="36" name="G" x="32" y="184">
    <properties>
     <property name="Facing" type="int" propertytype="Cardinal" value="1"/>
     <property name="ID" value="S1"/>
    </properties>
    <point/>
   </object>
+  <object id="55" name="ST" x="9" y="15" width="19" height="3" rotation="90">
+   <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">GAMMA</text>
+  </object>
+  <object id="56" name="ST" x="9" y="158" width="19" height="3" rotation="90">
+   <text fontfamily="Courier New" pixelsize="4" wrap="1" color="#ffffff">ALPHA</text>
+  </object>
  </objectgroup>
- <objectgroup id="10" name="References"/>
+ <objectgroup id="10" name="References" offsetx="-3" offsety="-17"/>
 </map>

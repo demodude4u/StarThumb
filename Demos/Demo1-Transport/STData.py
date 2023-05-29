@@ -18,7 +18,7 @@ class PackReader:
 
     def readSection(self):
         gc.collect()
-        print("Free", gc.mem_free())
+        # print("Free",gc.mem_free())
 
         sizeBytes = self.file.read(2)
         size = struct.unpack('H', sizeBytes)[0]
