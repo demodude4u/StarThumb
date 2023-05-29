@@ -691,8 +691,15 @@ while True:
 
     if buttonA.justPressed():
         lightAngle = (lightAngle + 1) % 8
-    if buttonB.justPressed():
+    if buttonB.justPressed() and not ship.gateLocked:
+        prevShip = ship
         ship = ship2 if ship == ship1 else ship1
+        ship.px_f3 = prevShip.px_f3
+        ship.py_f3 = prevShip.py_f3
+        ship.vx_f3 = prevShip.vx_f3
+        ship.vy_f3 = prevShip.vy_f3
+        ship.angle = prevShip.angle
+        ship.angleTarget = prevShip.angleTarget
 
     ship.speedLimited = False
     ship.dirSpeedLimited = False
