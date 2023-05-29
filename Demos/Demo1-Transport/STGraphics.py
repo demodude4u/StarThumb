@@ -57,19 +57,6 @@ cos_values_f10 = array('i', [int(math.cos(math.radians(x))
 dir_x_flip = bytearray([4, 3, 2, 1, 0, 7, 6, 5])
 
 
-class Font:
-    def __init__(self, charW, charH, imp):
-        self.charW = charW
-        self.charH = charH
-        self.span = imp[1]
-        self.imp = imp[0]
-
-
-# def loadFontPPM(w, h, color_filename, shading_filename=None):
-#     imp, iw, _ = loadImpPPM(color_filename, shading_filename)
-#     return Font(w, h, iw, imp)
-
-
 @micropython.viper
 def blitText(buffer: ptr8, font, text, x: int, y: int, vertical=False):
     cw = int(font.charW)
@@ -80,6 +67,7 @@ def blitText(buffer: ptr8, font, text, x: int, y: int, vertical=False):
     count = int(len(text))
 
     if vertical:
+        x -= ch
         dx, dy = 0, ch + 1
         w, h = cw, dy * count - 1
     else:
@@ -108,88 +96,6 @@ def blitText(buffer: ptr8, font, text, x: int, y: int, vertical=False):
                     buffer[((dstY >> 3)*72+dstX)*8+(dstY & 0b111)] = v
         cx += dx
         cy += dy
-
-
-# def _readPPMHeader(file):
-#     if file.readline().rstrip() != b'P6':
-#         raise ValueError("Invalid PPM format")
-#     ret = []
-#     while True:
-#         line = file.readline().lstrip()
-#         if not line.startswith(b'#'):
-#             for s in line.rstrip().split():
-#                 ret.append(int(s))
-#             if len(ret) >= 3:
-#                 return ret[0], ret[1], ret[2]
-
-
-# def loadImpPPM(color_filename, shading_filename=None):
-#     # ppm binary file format
-
-#     print("Loading", color_filename)
-#     if shading_filename:
-#         print("Loading", shading_filename)
-
-#     color_map = {0: 0, 255: 1, 162: 3, 78: 2}
-#     shading_map = {
-#         0x4040da: (0, 1, 5),
-#         0x8025da: (0, 1, 6),
-#         0xc040da: (0, 1, 7),
-#         0x2580da: (0, 1, 4),
-#         0x8080ff: (0, 0, 0),
-#         0xda80da: (0, 1, 0),
-#         0x40c0da: (0, 1, 3),
-#         0x80dada: (0, 1, 2),
-#         0xc0c0da: (0, 1, 1),
-#         0x1e1e74: (1, 1, 5),
-#         0x420f74: (1, 1, 6),
-#         0x661e74: (1, 1, 7),
-#         0x0f4274: (1, 1, 4),
-#         0x424289: (0, 0, 0),
-#         0x744274: (1, 1, 0),
-#         0x1e6674: (1, 1, 3),
-#         0x427474: (1, 1, 2),
-#         0x666674: (1, 1, 1),
-#         0xffffff: (1, 0, 0),
-#         0xa2a2a2: (1, 0, 0),
-#         0x4e4e4e: (1, 0, 0),
-#         0x000000: (1, 0, 0)
-#     }
-
-#     with open(color_filename, 'rb') as color_file:
-#         width, height = _readPPMHeader(color_file)[:2]
-
-#         shading_file = None
-#         if shading_filename is not None:
-#             shading_file = open(shading_filename, 'rb')
-#             _ = _readPPMHeader(shading_file)
-
-#         paddedHeight = 8 * ((height + 7) // 8)
-#         buffer = bytearray(width * paddedHeight)
-#         for y in range(height):
-#             for x in range(width):
-#                 cr, cg, cb = color_file.read(3)
-
-#                 sr, sg, sb = (shading_file.read(
-#                     3) if shading_file else (cr, cg, cb))
-
-#                 is_transparent = (cr, cg, cb) not in (
-#                     (0, 0, 0), (78, 78, 78), (162, 162, 162), (255, 255, 255))
-#                 if is_transparent:
-#                     continue
-
-#                 color = color_map.get(cg, 0)
-#                 shiny, directional, normal = shading_map.get(
-#                     (sr << 16) | (sg << 8) | sb, (0, 0, 0))
-
-#                 i = ((y >> 3)*width+x)*8+(y & 0b111)
-#                 buffer[i] = color | (shiny << 2) | (
-#                     normal << 3) | (directional << 6) | 0b10000000
-
-#         if shading_file:
-#             shading_file.close()
-
-#         return (buffer, width, height)
 
 
 def convertBMP(width, height, bmp, mask=None):
@@ -421,49 +327,6 @@ def blitContainerMap(buffer: ptr8, container, x: int, y: int):
                         buffer[((dstY >> 3)*72+dstX)*8+(dstY & 0b111)] = v
             dyt += 8
         dxt += 8
-
-# def _readPPMHeader(file):
-#     if file.readline().rstrip() != b'P6':
-#         raise ValueError("Invalid PPM format")
-#     ret = []
-#     while True:
-#         line = file.readline().lstrip()
-#         if not line.startswith(b'#'):
-#             for s in line.rstrip().split():
-#                 ret.append(int(s))
-#             if len(ret) >= 3:
-#                 return ret[0], ret[1], ret[2]
-
-
-# def loadShaderPPM(shader_filename):
-#     # ppm binary file format
-
-#     color_map = {0: 0, 255: 1, 162: 3, 78: 2}
-#     row_map = [3, 0, 2, 1, 7, 4, 6, 5]
-#     column_map = [0, 1, 2, 3, 4, 3, 2, 1]
-
-#     with open(shader_filename, 'rb') as shader_file:
-#         width, height = _readPPMHeader(shader_file)[:2]
-
-#         if width != 5 or height != 8:
-#             raise ValueError("Invalid shader image dimensions")
-
-#         colorData = bytearray(5*8)
-#         for i in range(5*8):
-#             cr, cg, cb = shader_file.read(3)
-#             colorData[i] = color_map.get(cg, 0)
-
-#         shader_array = array('H', [0] * 8)  # 8 16-bit values
-#         for sy in range(8):
-#             shader_value = 0
-#             cy = row_map[sy]
-#             for sx in range(8):
-#                 cx = column_map[sx]
-#                 color = colorData[cy*5+cx]
-#                 shader_value |= color << (2 * sx)
-#             shader_array[sy] = shader_value
-
-#     return shader_array
 
 
 @micropython.viper

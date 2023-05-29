@@ -5,14 +5,9 @@ import math
 import gc
 import random
 
-from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR
-
-from STGraphics import fill, blit, blitRotate, blitScale, display, update, setFPS, postShading, blitText, perfStart, perfStop, perfRender, blitContainerMap, Font
-from STData import PackReader
-
-gc.collect()
-
 buffer = bytearray(72*40)
+
+from STData import PackReader, Font  # NOQA
 
 with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
     shader = pack.readShader()
@@ -39,6 +34,17 @@ with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
     pack.loadAreas(3)
 
     starSystem = pack.readSystem()
+
+pack.file = None
+pack = None
+gc.collect()
+print("After pack:", gc.mem_free())
+
+from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR  # NOQA
+
+gc.collect()
+
+from STGraphics import fill, blit, blitRotate, blitScale, display, update, setFPS, postShading, blitText, perfStart, perfStop, perfRender, blitContainerMap  # NOQA
 
 gc.collect()
 
@@ -512,7 +518,6 @@ class GateTravel:
         stageFrames = 0
 
         zoomTime = 30 * 3
-        # turnTime = 60 * 10
         turnTime = 60 * max(1, totalSeconds - 6)
 
         speedStart_f3 = 5 << 3

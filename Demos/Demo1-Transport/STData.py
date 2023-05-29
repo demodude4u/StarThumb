@@ -1,5 +1,6 @@
 import struct
 from array import array
+import gc
 
 
 class PackReader:
@@ -16,6 +17,9 @@ class PackReader:
         self.file.close()
 
     def readSection(self):
+        gc.collect()
+        print("Free", gc.mem_free())
+
         sizeBytes = self.file.read(2)
         size = struct.unpack('H', sizeBytes)[0]
 
@@ -246,31 +250,9 @@ class Container:
         self.gates.append(gate)
 
 
-# def loadMapCSV(filename):
-#     with open(filename, 'r') as f:
-#         lines = f.readlines()
-#         height = len(lines)
-#         width = len(lines[0].split(','))
-#         data = []
-#         for line in lines:
-#             row = [int(cell) for cell in line.strip().split(',')]
-#             data.extend(row)
-#         return (bytearray(data), width, height)
-
-
-# def loadObjectsCSV(container, filename):
-#     global objectDefs
-#     with open(filename, 'r') as f:
-#         lines = f.readlines()
-#         objData = []
-#         for line in lines:
-#             obj = []
-#             for cell in line.strip().split(','):
-#                 try:
-#                     obj.append(int(cell))
-#                 except ValueError:
-#                     obj.append(cell)
-#             if len(obj) > 0:
-#                 objData.append(obj)
-
-#         initObjectData(container, objData)
+class Font:
+    def __init__(self, charW, charH, imp):
+        self.charW = charW
+        self.charH = charH
+        self.span = imp[1]
+        self.imp = imp[0]
