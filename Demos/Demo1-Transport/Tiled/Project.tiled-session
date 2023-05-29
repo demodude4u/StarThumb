@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "Alpha Port.tmx",
+    "activeFile": "Alpha Gate.tmx",
     "expandedProjectPaths": [
         "."
     ],
@@ -23,35 +23,35 @@
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 2,
+            "scale": 3,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 51.75,
-                "y": 105.25
+                "x": -17,
+                "y": 45.16666666666666
             }
         },
         "Alpha Port.tmx": {
             "expandedObjectLayers": [
-                10,
-                2
+                2,
+                10
             ],
-            "scale": 2,
+            "scale": 3,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 219.25,
-                "y": 136.75
+                "x": 151.33333333333334,
+                "y": 77.5
             }
         },
         "Beta Connector.tmx": {
             "expandedObjectLayers": [
-                10,
-                2
+                2,
+                10
             ],
             "scale": 3,
-            "selectedLayer": 0,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 32.166666666666686,
-                "y": 40.16666666666666
+                "x": 66.66666666666667,
+                "y": 57.16666666666666
             }
         },
         "Beta Gates.tmx": {
@@ -59,22 +59,22 @@
                 2
             ],
             "scale": 3,
-            "selectedLayer": 0,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 32.166666666666686,
-                "y": 64.16666666666666
+                "x": 130.66666666666663,
+                "y": 81.5
             }
         },
         "Beta Port.tmx": {
             "expandedObjectLayers": [
-                10,
-                2
+                2,
+                10
             ],
-            "scale": 2,
+            "scale": 3,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 72.25,
-                "y": 64.25
+                "x": 2,
+                "y": 80.83333333333333
             }
         },
         "Gamma Connector.tmx": {
@@ -89,22 +89,22 @@
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 4,
-            "selectedLayer": 0,
+            "scale": 3,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 31.125,
-                "y": -17.625
+                "x": 36.666666666666686,
+                "y": -22.5
             }
         },
         "Gamma Port.tmx": {
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 2,
+            "scale": 3,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 72.25,
-                "y": 76.25
+                "x": 76.66666666666667,
+                "y": 129.83333333333331
             }
         },
         "Map.tmx": {
@@ -116,6 +116,17 @@
             "viewCenter": {
                 "x": 199.16666666666669,
                 "y": 84.83333333333331
+            }
+        },
+        "Star System.tmx": {
+            "expandedObjectLayers": [
+                2
+            ],
+            "scale": 11,
+            "selectedLayer": 0,
+            "viewCenter": {
+                "x": 15.363636363636367,
+                "y": -20.13636363636364
             }
         },
         "Station8.tsx": {
@@ -136,39 +147,43 @@
     },
     "last.exportedFilePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport",
     "last.externalTilesetPath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled",
-    "last.imagePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled",
+    "last.imagePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Shaded",
     "last.worldFilePath": "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled",
     "loadedWorlds": [
         "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled/Station Alpha.world",
         "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled/Station Beta.world",
         "G:/My Drive/Thumby Projects/_git/StarThumb/Demos/Demo1-Transport/Tiled/Station Gamma.world"
     ],
+    "map.fixedSize": false,
     "map.lastUsedExportFilter": "CSV files (*.csv)",
+    "map.lastUsedFormat": "tmx",
+    "map.tileHeight": 8,
+    "map.tileWidth": 8,
     "openFiles": [
-        "Tiles.tsx",
         "Alpha Gate.tmx",
         "Alpha Port.tmx",
         "Beta Port.tmx",
         "Beta Gates.tmx",
         "Beta Connector.tmx",
         "Gamma Port.tmx",
-        "Gamma Gate.tmx"
+        "Gamma Gate.tmx",
+        "Star System.tmx"
     ],
     "project": "Project.tiled-project",
-    "property.type": "Cardinal",
+    "property.type": "GateTravel",
     "recentFiles": [
-        "Tiles.tsx",
-        "Alpha Gate.tmx",
+        "Star System.tmx",
         "Gamma Gate.tmx",
         "Gamma Port.tmx",
         "Beta Connector.tmx",
         "Beta Gates.tmx",
         "Beta Port.tmx",
         "Alpha Port.tmx",
+        "Alpha Gate.tmx",
+        "Tiles.tsx",
         "Alpha Connector.tmx",
         "Gamma Connector.tmx",
-        "Map.tmx",
-        "TransportDemo8.tmx"
+        "Map.tmx"
     ],
     "resizeMap.removeObjects": false,
     "tileset.lastUsedFormat": "tsx",

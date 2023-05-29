@@ -14,7 +14,7 @@ class PackWriter:
         "LT": ["name", "text", "x", "y", "rotation"],
         "ST": ["name", "text", "x", "y", "rotation"],
         "S": ["name", "x", "y", "width", "height"],
-        "G": ["name", "x", "y", "Facing"],
+        "G": ["name", "ID", "x", "y", "Facing"],
     }
     IMG_COLOR_CONVERT = {
         0x4040da: 0b11101000,
@@ -50,6 +50,58 @@ class PackWriter:
         size = len(data)
         sizeBytes = struct.pack('H', size)
         self.data += sizeBytes + data
+
+    def writeSystem(self, filePath):
+        print("SS", filePath)
+        tree = ET.parse(self.cd+filePath)
+        root = tree.getroot()
+
+        # Extract Object data
+        locations = []
+        routes = []
+        for obj in root.findall("./objectgroup[@id='2']/object"):
+            objDict = obj.attrib
+
+            # Get location name, World file, and coordinates
+            locations.append([
+                objDict['name'],
+                obj.find(
+                    "./properties/property[@name='World']").attrib['value'],
+                int(objDict['x']),
+                int(objDict['y'])
+            ])
+
+            # Check all properties for Gate properties
+            for prop in obj.findall("./properties/property"):
+                if 'Gate' in prop.attrib['name']:
+                    # Get suffix after 'Gate'
+                    gateName = prop.attrib['name'][4:]
+                    destObjId = prop.find(
+                        "./properties/property[@name='Destination']").attrib['value']
+                    arrival = prop.find(
+                        "./properties/property[@name='Arrival']").attrib['value']
+                    duration = int(
+                        prop.find("./properties/property[@name='Duration']").attrib['value'])
+
+                    # Find destination object's name
+                    destName = root.find(
+                        f"./objectgroup[@id='2']/object[@id='{destObjId}']").attrib['name']
+
+                    routes.append([
+                        objDict['name'],
+                        gateName,
+                        destName,
+                        arrival,
+                        duration
+                    ])
+
+        locationsBytes = '\n'.join([','.join(map(str, line))
+                                   for line in locations]).encode()
+        self.writeSection(locationsBytes)
+
+        routesBytes = '\n'.join([','.join(map(str, line))
+                                 for line in routes]).encode()
+        self.writeSection(routesBytes)
 
     def writeWorld(self, filePath):
         with open(self.cd+filePath, 'r') as file:

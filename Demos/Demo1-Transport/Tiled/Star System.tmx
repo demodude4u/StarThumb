@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="30" height="20" tilewidth="8" tileheight="8" infinite="1" backgroundcolor="#313131" nextlayerid="4" nextobjectid="20">
+ <objectgroup id="2" name="Object Layer 1" offsetx="2" offsety="3">
+  <object id="1" name="Alpha" x="0" y="0">
+   <properties>
+    <property name="GateE1" type="class" propertytype="GateTravel">
+     <properties>
+      <property name="Arrival" value="S1"/>
+      <property name="Destination" type="object" value="15"/>
+      <property name="Duration" type="int" value="10"/>
+     </properties>
+    </property>
+    <property name="World" type="file" value="Station Alpha.world"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="15" name="Beta" x="16" y="-16">
+   <properties>
+    <property name="GateN1" type="class" propertytype="GateTravel">
+     <properties>
+      <property name="Arrival" value="S1"/>
+      <property name="Destination" type="object" value="19"/>
+      <property name="Duration" type="int" value="10"/>
+     </properties>
+    </property>
+    <property name="GateS1" type="class" propertytype="GateTravel">
+     <properties>
+      <property name="Arrival" value="E1"/>
+      <property name="Destination" type="object" value="1"/>
+      <property name="Duration" type="int" value="10"/>
+     </properties>
+    </property>
+    <property name="World" type="file" value="Station Beta.world"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="19" name="Gamma" x="16" y="-40">
+   <properties>
+    <property name="GateS1" type="class" propertytype="GateTravel">
+     <properties>
+      <property name="Arrival" value="N1"/>
+      <property name="Destination" type="object" value="15"/>
+      <property name="Duration" type="int" value="10"/>
+     </properties>
+    </property>
+    <property name="World" type="file" value="Station Gamma.world"/>
+   </properties>
+   <point/>
+  </object>
+ </objectgroup>
+</map>

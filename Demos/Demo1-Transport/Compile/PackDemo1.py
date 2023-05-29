@@ -30,16 +30,17 @@ pack.cd = "../Tiled/"
 
 pack.writeMap("Alpha Gate.tmx")
 pack.writeMap("Alpha Port.tmx")
-pack.writeWorld("Station Alpha.world")
-
 pack.writeMap("Beta Connector.tmx")
 pack.writeMap("Beta Gates.tmx")
 pack.writeMap("Beta Port.tmx")
-pack.writeWorld("Station Beta.world")
-
 pack.writeMap("Gamma Gate.tmx")
 pack.writeMap("Gamma Port.tmx")
+
+pack.writeWorld("Station Alpha.world")
+pack.writeWorld("Station Beta.world")
 pack.writeWorld("Station Gamma.world")
+
+pack.writeSystem("Star System.tmx")
 
 pack.cd = "../"
 

@@ -20,6 +20,34 @@
                 "North"
             ],
             "valuesAsFlags": false
+        },
+        {
+            "color": "#ffa0a0a4",
+            "drawFill": true,
+            "id": 4,
+            "members": [
+                {
+                    "name": "Arrival",
+                    "type": "string",
+                    "value": ""
+                },
+                {
+                    "name": "Destination",
+                    "type": "object",
+                    "value": 0
+                },
+                {
+                    "name": "Duration",
+                    "type": "int",
+                    "value": 0
+                }
+            ],
+            "name": "GateTravel",
+            "type": "class",
+            "useAs": [
+                "property",
+                "object"
+            ]
         }
     ]
 }

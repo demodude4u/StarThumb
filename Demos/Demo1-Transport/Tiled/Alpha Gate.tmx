@@ -26,6 +26,7 @@
   <object id="46" name="G" x="96" y="32">
    <properties>
     <property name="Facing" type="int" propertytype="Cardinal" value="0"/>
+    <property name="ID" value="E1"/>
    </properties>
    <point/>
   </object>

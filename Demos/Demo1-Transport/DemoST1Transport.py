@@ -35,20 +35,15 @@ with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
     impShip2Small = pack.readIMP()
     impShip2 = pack.readIMP()
 
-    pack.loadContainers(2, impTiles)
-    areaAlpha = pack.readArea()
+    pack.loadContainers(7, impTiles)
+    pack.loadAreas(3)
 
-    pack.loadContainers(3, impTiles)
-    areaBeta = pack.readArea()
-
-    pack.loadContainers(2, impTiles)
-    areaGamma = pack.readArea()
+    starSystem = pack.readSystem()
 
 gc.collect()
 
 # Features Not Experimented:
 # - Thruster particles/animation
-# - Gate Sequence
 # - Docking Camera
 # - Glimmer
 # - Trails
@@ -136,7 +131,7 @@ class Ship:
         gateDistance_f3 = self.gateDistance_f3
 
         if gateLocked:
-            gx, gy, gdir = gate
+            _, gx, gy, gdir = gate
             if gateEnter:
                 gdir = (gdir + 2) & 0b11
             speedMax_f3 = gateSpeed_f3
@@ -235,7 +230,7 @@ class Ship:
         self.vy_f3 = vy_f3
 
         if gateLocked:
-            gx, gy, gdir = gate
+            _, gx, gy, gdir = gate
             if gateEnter:
                 gdir = (gdir + 2) & 0b11
             if gdir == 0:
@@ -487,7 +482,7 @@ class Zones:
 
         px = int(ship.px_f3) >> 3
         py = int(ship.py_f3) >> 3
-        gx, gy, gdir = gate
+        _, gx, gy, gdir = gate
         if gdir == 0:
             x, y, w, h = gx, gy - 16, 8, 32
         elif gdir == 1:
@@ -506,17 +501,28 @@ class Zones:
 
 class GateTravel:
     def loop():
-        global ship, camX, camY, lastCamX, lastCamY, lightAngle
+        global ship, camX, camY, lastCamX, lastCamY, lightAngle, starSystem, area, containers
+
+        srcGateId, _, _, srcGateDir = ship.gate
+        dstArea, dstGateId, totalSeconds = area.routes[srcGateId]
+        dstGate = dstArea.gateLookup[dstGateId]
+        _, dstGateX, dstGateY, dstGateDir = dstGate
 
         travelStage = 0
         stageFrames = 0
 
         zoomTime = 30 * 3
-        turnTime = 60 * 10
+        # turnTime = 60 * 10
+        turnTime = 60 * max(1, totalSeconds - 6)
 
         speedStart_f3 = 5 << 3
         speedTurn_f3 = 10 << 3
         speed_f3 = speedStart_f3
+
+        startAngle = (90 * srcGateDir)
+        endAngle = (90 * ((dstGateDir + 2) % 4))
+        rotate = endAngle - startAngle
+        rotate = (rotate + 180) % 360 - 180
 
         gateRate = 15
         gateFrame = 0
@@ -533,7 +539,7 @@ class GateTravel:
             stageFrames += 1
 
             if travelStage == 0:  # Stage 0 Speed up (zoom out)
-                ship.angle = 0
+                ship.angle = startAngle
                 zoom_f6 = 64 - ((32 * stageFrames) // zoomTime)
                 speed_f3 = speedStart_f3 + \
                     (((speedTurn_f3 - speedStart_f3) * stageFrames) // zoomTime)
@@ -544,7 +550,8 @@ class GateTravel:
                 fps = 30 + ((30 * stageFrames) // zoomTime)
 
             elif travelStage == 1:  # Stage 1 Round the corner
-                ship.angle = (360 - ((90 * stageFrames) // turnTime)) % 360
+                ship.angle = (startAngle + 360 +
+                              ((rotate * stageFrames) // turnTime)) % 360
                 zoom_f6 = 32
                 speed_f3 = speedTurn_f3
                 if stageFrames > turnTime:
@@ -554,7 +561,7 @@ class GateTravel:
                 fps = 60
 
             elif travelStage == 2:  # Stage 2 Slow down (zoom in)
-                ship.angle = 270
+                ship.angle = endAngle
                 zoom_f6 = 32 + ((32 * stageFrames) // zoomTime)
                 speed_f3 = speedTurn_f3 - \
                     (((speedTurn_f3 - speedStart_f3) * stageFrames) // zoomTime)
@@ -563,9 +570,6 @@ class GateTravel:
                     stageFrames = 0
                 gateRate = 30 - ((15 * stageFrames) // zoomTime)
                 fps = 60 - ((30 * stageFrames) // zoomTime)
-
-            # speed_f3 = speedStart_f3 # XXX TESTING
-            # zoom_f6 = 64 # XXX TESTING
 
             setFPS(fps)
 
@@ -616,13 +620,16 @@ class GateTravel:
             update()
 
             if travelStage == 3:  # Exit Loop
+                area = dstArea
+                containers = area.containers
+
                 ship.gateLocked = True
                 ship.gateEnter = True
-                ship.gate = station.gates[0]
+                ship.gate = dstGate
                 ship.gateDistance_f3 = (0-36) << 3
                 ship.gateSpeed_f3 = 5 << 3
-                ship.px_f3 = ship.gate[0] << 3
-                ship.py_f3 = ship.gate[1] << 3
+                ship.px_f3 = dstGateX << 3
+                ship.py_f3 = dstGateY << 3
                 setFPS(30)
                 break
 
@@ -650,7 +657,7 @@ class GateTravel:
         blitScale(buffer, imp, zoom_f6, x, y, iw, ih, hw, hh, dir)
 
 
-area = areaAlpha
+area = starSystem.areas["Alpha"]
 containers = area.containers
 
 ship1 = Ship(impShip, impShipSmall, speedMax_f3=2 << 3, accel_f3=1,
@@ -747,7 +754,7 @@ while True:
             Scanner.render(x-camX, y-camY, w, h)
 
         for objGate in container.gates:
-            x, y, dir = objGate
+            _, x, y, dir = objGate
             if dir & 0b1:
                 imp, iw, ih = impGateH
             else:

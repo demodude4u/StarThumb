@@ -5,6 +5,7 @@ from array import array
 class PackReader:
     def __init__(self, filePath):
         self.filePath = filePath
+        self.areaLookup = {}
         self.containerLookup = {}
 
     def __enter__(self):
@@ -40,11 +41,16 @@ class PackReader:
         for cd in conData:
             cName, cx, cy, cw, ch = cd
             container = self.containerLookup[cName] if cName in self.containerLookup else None
-            area.initContainer(cName, cx, cy, cw, ch, container)
+            area.initContainer(cx, cy, cw, ch, container)
 
+        self.areaLookup[name] = area
         return area
 
-    def readContainer(self, impTiles=None):
+    def loadAreas(self, count):
+        for _ in range(count):
+            self.readArea()
+
+    def readContainer(self, impTiles):
         objSectionData = self.readSection()
         objData = objSectionData.decode()
         objLines = objData.split('\n')
@@ -68,7 +74,7 @@ class PackReader:
         self.containerLookup[name] = container
         return container
 
-    def loadContainers(self, count, impTiles=None):
+    def loadContainers(self, count, impTiles):
         for _ in range(count):
             self.readContainer(impTiles)
 
@@ -89,16 +95,78 @@ class PackReader:
 
         return shaderArray
 
+    def readSystem(self):
+        areaSectionData = self.readSection()
+        areaData = areaSectionData.decode()
+        areaLines = areaData.split('\n')
+        areaData = []
+        for line in areaLines:
+            fields = line.split(',')
+            fields = [(int(field) if field.lstrip('-').isdigit() else field)
+                      for field in fields]
+            areaData.append(tuple(fields))
+
+        routeSectionData = self.readSection()
+        routeData = routeSectionData.decode()
+        routeLines = routeData.split('\n')
+        routeData = []
+        for line in routeLines:
+            fields = line.split(',')
+            fields = [(int(field) if field.lstrip('-').isdigit() else field)
+                      for field in fields]
+            routeData.append(tuple(fields))
+
+        system = System()
+
+        for routeID, name, x, y in areaData:
+            area = self.areaLookup[name]
+            system.initArea(routeID, x, y, area)
+
+        for srcAreaRouteID, srcGate, dstAreaRouteID, dstGate, time in routeData:
+            srcArea = system.areas[srcAreaRouteID]
+            dstArea = system.areas[dstAreaRouteID]
+            system.initRoute(srcArea, srcGate, dstArea, dstGate, time)
+
+        return system
+
+
+class System:
+    def __init__(self):
+        self.areas = {}
+
+    def initArea(self, routeID, x, y, area):
+        area.initSystemCoords(x, y)
+        self.areas[routeID] = area
+
+    def initRoute(self, srcArea, srcGate, dstArea, dstGate, time):
+        srcArea.initRoute(srcGate, dstArea, dstGate, time)
+
 
 class Area:
     def __init__(self, name):
         self.name = name
         self.containers = []
+        self.routes = {}
+        self.gateLookup = {}
 
-    def initContainer(self, name, x, y, w, h, container=None):
+        # from system coords
+        self.x = 0
+        self.y = 0
+
+    def initSystemCoords(self, x, y):
+        self.x = x
+        self.y = y
+
+    def initContainer(self, x, y, w, h, container):
         container.initAreaBounds(x, y, w, h)
         container.initObjectData()
+        for gate in container.gates:
+            id, _, _, _ = gate
+            self.gateLookup[id] = gate
         self.containers.append(container)
+
+    def initRoute(self, srcGate, dstArea, dstGate, time):
+        self.routes[srcGate] = (dstArea, dstGate, time)
 
 
 class Container:
@@ -110,7 +178,7 @@ class Container:
         "LT": lambda con, obj: con.initLargeText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
         "ST": lambda con, obj: con.initSmallText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
         "S": lambda con, obj: con.initScanner(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
-        "G": lambda con, obj: con.initGate(x=obj[1], y=obj[2], dir=obj[3])
+        "G": lambda con, obj: con.initGate(id=obj[1], x=obj[2], y=obj[3], dir=obj[4])
     }
 
     def __init__(self, name, columns, rows, map, objData, impTiles=None):
@@ -173,8 +241,9 @@ class Container:
     def initScanner(self, x, y, w, h):
         self.scanners.append((self.x+x, self.y+y, w, h))
 
-    def initGate(self, x, y, dir):
-        self.gates.append((self.x+x, self.y+y, dir))
+    def initGate(self, id, x, y, dir):
+        gate = (id, self.x+x, self.y+y, dir)
+        self.gates.append(gate)
 
 
 # def loadMapCSV(filename):

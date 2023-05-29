@@ -34,12 +34,14 @@
   <object id="34" name="G" x="32" y="8">
    <properties>
     <property name="Facing" type="int" propertytype="Cardinal" value="3"/>
+    <property name="ID" value="N1"/>
    </properties>
    <point/>
   </object>
   <object id="36" name="G" x="32" y="120">
    <properties>
     <property name="Facing" type="int" propertytype="Cardinal" value="1"/>
+    <property name="ID" value="S1"/>
    </properties>
    <point/>
   </object>
