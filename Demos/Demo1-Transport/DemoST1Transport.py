@@ -48,6 +48,8 @@ from STGraphics import fill, blit, blitRotate, blitScale, display, update, setFP
 
 gc.collect()
 
+print(gc.mem_free())
+
 # Features Not Experimented:
 # - Thruster particles/animation
 # - Docking Camera
@@ -759,8 +761,8 @@ while True:
 
     ship.render(camX, camY)
 
+    Scanner.update()
     for container in containers:
-        Scanner.update()
         for objScanner in container.scanners:
             x, y, w, h = objScanner
             Scanner.render(x-camX, y-camY, w, h)

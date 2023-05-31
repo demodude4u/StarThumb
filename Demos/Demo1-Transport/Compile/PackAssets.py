@@ -50,6 +50,7 @@ class PackWriter:
         size = len(data)
         sizeBytes = struct.pack('H', size)
         self.data += sizeBytes + data
+        print("\t", size, " bytes")
 
     def writeSystem(self, filePath):
         print("SS", filePath)

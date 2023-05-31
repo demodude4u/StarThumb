@@ -23,11 +23,11 @@
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 3,
+            "scale": 4,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": -17,
-                "y": 45.16666666666666
+                "x": 52.125,
+                "y": 32
             }
         },
         "Alpha Port.tmx": {
@@ -35,11 +35,11 @@
                 2,
                 10
             ],
-            "scale": 3,
+            "scale": 4,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 151.33333333333334,
-                "y": 77.5
+                "x": 84.125,
+                "y": 64
             }
         },
         "Beta Connector.tmx": {
@@ -47,11 +47,11 @@
                 2,
                 10
             ],
-            "scale": 4,
-            "selectedLayer": 2,
+            "scale": 3,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 6.25,
-                "y": 49.875
+                "x": 32.166666666666686,
+                "y": 40
             }
         },
         "Beta Gates.tmx": {
@@ -61,8 +61,8 @@
             "scale": 3,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 122.33333333333331,
-                "y": 105.16666666666666
+                "x": 32.166666666666686,
+                "y": 95.99999999999999
             }
         },
         "Beta Port.tmx": {
@@ -70,11 +70,11 @@
                 2,
                 10
             ],
-            "scale": 3,
+            "scale": 2,
             "selectedLayer": 2,
             "viewCenter": {
-                "x": 2,
-                "y": 80.83333333333333
+                "x": 72.25,
+                "y": 64
             }
         },
         "Gamma Connector.tmx": {
@@ -89,22 +89,22 @@
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 3,
-            "selectedLayer": 1,
+            "scale": 4,
+            "selectedLayer": 0,
             "viewCenter": {
-                "x": 36.666666666666686,
-                "y": -22.5
+                "x": 32.125,
+                "y": 52
             }
         },
         "Gamma Port.tmx": {
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 3,
+            "scale": 5.5,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 76.66666666666667,
-                "y": 129.83333333333331
+                "x": 72.09090909090911,
+                "y": 76
             }
         },
         "Map.tmx": {
@@ -119,14 +119,11 @@
             }
         },
         "Star System.tmx": {
-            "expandedObjectLayers": [
-                2
-            ],
-            "scale": 11,
+            "scale": 131.93125,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 15.090909090909093,
-                "y": -20.772727272727273
+                "x": 2.137476905585295,
+                "y": 3.623099152020465
             }
         },
         "Station8.tsx": {
@@ -134,7 +131,7 @@
         },
         "Tiles.tsx": {
             "scaleInDock": 4,
-            "scaleInEditor": 4
+            "scaleInEditor": 5.5
         },
         "TransportDemo8.tmx": {
             "scale": 2.7213541666666665,
@@ -160,7 +157,6 @@
     "map.tileHeight": 8,
     "map.tileWidth": 8,
     "openFiles": [
-        "Star System.tmx",
         "Alpha Gate.tmx",
         "Alpha Port.tmx",
         "Beta Port.tmx",
@@ -168,12 +164,12 @@
         "Beta Connector.tmx",
         "Gamma Port.tmx",
         "Gamma Gate.tmx",
+        "Star System.tmx",
         "Tiles.tsx"
     ],
     "project": "Project.tiled-project",
     "property.type": "GateTravel",
     "recentFiles": [
-        "Star System.tmx",
         "Alpha Gate.tmx",
         "Alpha Port.tmx",
         "Beta Port.tmx",
@@ -181,6 +177,7 @@
         "Beta Connector.tmx",
         "Gamma Port.tmx",
         "Gamma Gate.tmx",
+        "Star System.tmx",
         "Tiles.tsx",
         "Alpha Connector.tmx",
         "Gamma Connector.tmx",

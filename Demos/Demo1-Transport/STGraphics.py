@@ -2,7 +2,8 @@ import math
 from utime import ticks_us, ticks_diff
 from array import array
 
-from thumbyGrayscale import display as GSdisplay
+# from thumbyGrayscale import display as GSdisplay
+from STDisplay import display as GSdisplay
 
 GSdisplay.setFPS(30)
 
