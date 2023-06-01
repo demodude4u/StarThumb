@@ -7,7 +7,7 @@ import random
 
 buffer = bytearray(72*40)
 
-from STData import PackReader, Font  # NOQA
+from STData import PackReader, Font, Container  # NOQA
 
 with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
     shader = pack.readShader()
@@ -44,7 +44,21 @@ from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR  #
 
 gc.collect()
 
-from STGraphics import fill, blit, blitRotate, blitScale, display, update, setFPS, postShading, blitText, perfStart, perfStop, perfRender, blitContainerMap  # NOQA
+from STGraphics import (  # NOQA
+    fill,
+    blit,
+    blitRotate,
+    blitScale,
+    display,
+    update,
+    setFPS,
+    postShading,
+    blitText,
+    perfStart,
+    perfStop,
+    perfRender,
+    blitContainerMap,
+)
 
 gc.collect()
 
@@ -60,9 +74,13 @@ print(gc.mem_free())
 # - TestAnimate
 # - TestParticles
 
+area = starSystem.areas["Alpha"]
+containers = area.containers
+
 
 class Ship:
-    def __init__(self, impShip, impTinyShip, speedMax_f3, accel_f3, dampening_f6, boost_f3, boostDelay, rotateSpeed):
+    def __init__(self, impShip, impTinyShip, speedMax_f3, accel_f3,
+                 dampening_f6, boost_f3, boostDelay, rotateSpeed):
         self.impShip = impShip
         self.impTinyShip = impTinyShip
         self.speedMax_f3 = speedMax_f3
@@ -89,6 +107,7 @@ class Ship:
         self.gateEnter = False
         self.gateSpeed_f3 = 0
         self.gateDistance_f3 = 0
+        self.container = None
 
     def inputButtons(self):
         inputX_f3, inputY_f3 = 0, 0
@@ -111,6 +130,20 @@ class Ship:
                 inputY_f3 = -5
         self.inputX_f3 = inputX_f3
         self.inputY_f3 = inputY_f3
+
+    @micropython.native
+    def updateContainer(self):
+        sx = self.px_f3 >> 3
+        sy = self.py_f3 >> 3
+        for container in containers:
+            cx1 = container.x1
+            cy1 = container.y1
+            cx2 = container.x2
+            cy2 = container.y2
+            if cx1 <= sx < cx2 and cy1 <= sy < cy2:
+                self.container = container
+                return
+        self.container = None
 
     @micropython.native
     def moveFrame(self):
@@ -267,8 +300,6 @@ class Ship:
 
     @micropython.native
     def render(self, camX: int, camY: int):
-        global buffer
-
         imp, iw, ih = self.impShip
         hw = iw >> 1
         hh = ih >> 1
@@ -278,8 +309,6 @@ class Ship:
 
     @micropython.native
     def renderTiny(self, camX: int, camY: int):
-        global buffer
-
         imp, iw, ih = self.impTinyShip
         hw = iw >> 1
         hh = ih >> 1
@@ -289,8 +318,6 @@ class Ship:
 
     @micropython.native
     def renderZoomed(self, camX: int, camY: int, zoom_f6: int):
-        global buffer
-
         imp, iw, ih = self.impShip
         hw = iw >> 1
         hh = ih >> 1
@@ -307,29 +334,16 @@ class SpaceBits:
     layer2 = bytearray((random.randrange(0, 256) for _ in range(12*8)))
     speedColors = bytes([0b10, 0b11, 0b01])
 
+    @staticmethod
     @micropython.viper
-    def render(px: int, py: int, vx: int, vy: int):
-        global buffer
-
+    def render(px: int, py: int):
         sb1 = ptr8(SpaceBits.layer1)
         sb2 = ptr8(SpaceBits.layer2)
-        speedColors = ptr8(SpaceBits.speedColors)
-
-        # speed = 0
-        # if vx > 0:
-        #     speed += vx
-        # else:
-        #     speed -= vx
-        # if vy > 0:
-        #     speed += vy
-        # else:
-        #     speed -= vy
 
         cShift = (px >> 5) % 12
         cPixel = (px >> 1) & 0b1111
         rShift = (py >> 5) % 8
         rPixel = (py >> 1) & 0b1111
-        # color = speedColors[int(min(2, (speed+1) >> 1))]
         color = 0b10
 
         for sr in range(4):
@@ -349,7 +363,6 @@ class SpaceBits:
         cPixel = (px >> 2) & 0b1111
         rShift = (py >> 6) % 8
         rPixel = (py >> 2) & 0b1111
-        # color = speedColors[int(min(2, (speed+3) >> 2))]
 
         for sr in range(4):
             for sc in range(6):
@@ -364,27 +377,12 @@ class SpaceBits:
                     continue
                 buffer[((y >> 3)*72+x)*8+(y & 0b111)] = color
 
+    @staticmethod
     @micropython.viper
-    def renderZoomed(px: int, py: int, vx: int, vy: int, zoom_f6: int):
-        global buffer
-
+    def renderZoomed(px: int, py: int, zoom_f6: int):
         sb1 = ptr8(SpaceBits.layer1)
         sb2 = ptr8(SpaceBits.layer2)
-        speedColors = ptr8(SpaceBits.speedColors)
 
-        # maxSize = (zoom_f6 >> 3) - 4
-
-        # speed = 0
-        # if vx > 0:
-        #     speed += vx
-        # else:
-        #     speed -= vx
-        # if vy > 0:
-        #     speed += vy
-        # else:
-        #     speed -= vy
-
-        # speed = (zoom_f6 * speed) >> 6
         cellSize_f2 = (zoom_f6 * 16) >> 4
 
         xo_f2 = 144 - 6 * cellSize_f2
@@ -396,16 +394,12 @@ class SpaceBits:
             cPixel_f2 = px % cellSize_f2
             rShift = (py // cellSize_f2) % 8
             rPixel_f2 = py % cellSize_f2
-            # color = speedColors[int(min(2, (speed+1) >> 1))]
 
             for sr in range(8):
                 for sc in range(12):
                     c = (sc + cShift) % 12
                     r = (sr + rShift) % 8
-                    cell = sb1[r*12+c]
-                    # size = ((cell & 0b10000) >> 3) | (cell & 0b1)
-                    # if size > maxSize:
-                    #     continue
+                    cell = sb1[r*12+c] if layer == 1 else sb2[r*12+c]
                     px_f2 = (zoom_f6 * (cell & 0b1111)) >> 4
                     py_f2 = (zoom_f6 * (((cell >> 4) & 0b1111))) >> 4
                     x = (sc * cellSize_f2 + px_f2 - cPixel_f2 + xo_f2) >> 2
@@ -415,23 +409,20 @@ class SpaceBits:
                     buffer[((y >> 3)*72+x)*8+(y & 0b111)] = color
             px >>= 1
             py >>= 1
-            # speed >>= 1
 
 
 class Scanner:
-    frame = 0
     randomPattern = 0
     randomOffset = 0
 
+    @staticmethod
     def update():
-        Scanner.frame += 1
         Scanner.randomPattern = random.getrandbits(32)
 
+    @staticmethod
     @micropython.viper
     def render(x: int, y: int, w: int, h: int):
-        global buffer
         buf = ptr8(buffer)
-        frame = int(Scanner.frame)
         randomPattern = int(Scanner.randomPattern)
 
         dx1, dx2 = int(max(0, x)), int(min(72, x+w))
@@ -449,7 +440,7 @@ class Scanner:
         for srcX in range(sx1, sx2):
             dstY = dy1
             rpo = srcX & 0b11111
-            for srcY in range(sy1, sy2):
+            for _ in range(sy1, sy2):
                 i = ((dstY >> 3)*72+dstX)*8+(dstY & 0b111)
                 v = buf[i]
                 if (v & 0b10000000) and (randomPattern & (0b1 << rpo)):
@@ -460,6 +451,7 @@ class Scanner:
 
 
 class Zones:
+    @staticmethod
     def dirSpeedLimit(ship, speed_f3: int, x: int, y: int, w: int, h: int, dir: int):
         px = int(ship.px_f3) >> 3
         py = int(ship.py_f3) >> 3
@@ -469,6 +461,7 @@ class Zones:
                 ship.speedLimit_f3 = speed_f3
                 ship.speedLimitDir = dir
 
+    @staticmethod
     def speedLimit(ship, speed_f3: int, x: int, y: int, w: int, h: int):
         px = int(ship.px_f3) >> 3
         py = int(ship.py_f3) >> 3
@@ -477,6 +470,7 @@ class Zones:
                 ship.speedLimited = True
                 ship.speedLimit_f3 = speed_f3
 
+    @staticmethod
     def angleLock(ship, angle: int, x: int, y: int, w: int, h: int):
         px = int(ship.px_f3) >> 3
         py = int(ship.py_f3) >> 3
@@ -484,6 +478,7 @@ class Zones:
             ship.angleLocked = True
             ship.angleLock = angle
 
+    @staticmethod
     def gateLock(ship, gate, gateSpeed_f3):
         if ship.gateLocked:
             return
@@ -508,8 +503,9 @@ class Zones:
 
 
 class GateTravel:
+    @staticmethod
     def loop():
-        global ship, camX, camY, lastCamX, lastCamY, lightAngle, starSystem, area, containers
+        global camX, camY, area, containers
 
         srcGateId, _, _, srcGateDir = ship.gate
         dstArea, dstGateId, totalSeconds = area.routes[srcGateId]
@@ -526,8 +522,8 @@ class GateTravel:
         speedTurn_f3 = 10 << 3
         speed_f3 = speedStart_f3
 
-        startAngle = (90 * srcGateDir)
-        endAngle = (90 * ((dstGateDir + 2) % 4))
+        startAngle = 90 * srcGateDir
+        endAngle = 90 * ((dstGateDir + 2) % 4)
         rotate = endAngle - startAngle
         rotate = (rotate + 180) % 360 - 180
 
@@ -601,14 +597,12 @@ class GateTravel:
 
             camX = (ship.px_f3 >> 3) - zhw + (ship.vx_f3 >> 3)
             camY = (ship.py_f3 >> 3) - zhh + (ship.vy_f3 >> 3)
-            camDX = camX + zhw - lastCamX
-            camDY = camY + zhh - lastCamY
-            lastCamX = camX + zhw
-            lastCamY = camY + zhh
 
             fill(buffer, 0b00)
 
-            SpaceBits.renderZoomed(camX, camY, camDX, camDY, zoom_f6)
+            Container.updateVisible(camX, camY, containers)
+
+            SpaceBits.renderZoomed(camX, camY, zoom_f6)
 
             if zoom_f6 > 32:
                 ship.renderZoomed(camX, camY, zoom_f6)
@@ -640,10 +634,9 @@ class GateTravel:
                 setFPS(30)
                 break
 
+    @staticmethod
     @micropython.native
     def renderGateTiny(px_f3: int, py_f3: int, camX: int, camY: int, angle: int):
-        global buffer, impGateSmall
-
         imp, iw, ih = impGateSmall
         hw = iw >> 1
         hh = ih >> 1
@@ -651,10 +644,9 @@ class GateTravel:
         y = (((py_f3 >> 3) - camY) >> 1) - hh
         blitRotate(buffer, imp, angle, x, y, iw, ih, hw, hh)
 
+    @staticmethod
     @micropython.native
     def renderGateZoomed(px_f3: int, py_f3: int, camX: int, camY: int, angle: int, zoom_f6: int):
-        global buffer, impGateV
-
         imp, iw, ih = impGateV
         hw = iw >> 1
         hh = ih >> 1
@@ -664,9 +656,6 @@ class GateTravel:
         blitScale(buffer, imp, zoom_f6, x, y, iw, ih, hw, hh, dir)
 
 
-area = starSystem.areas["Alpha"]
-containers = area.containers
-
 ship1 = Ship(impShip, impShipSmall, speedMax_f3=2 << 3, accel_f3=1,
              dampening_f6=62, boost_f3=3 << 3, boostDelay=60, rotateSpeed=5)
 ship2 = Ship(impShip2, impShip2Small, speedMax_f3=3 << 3, accel_f3=2,
@@ -675,7 +664,6 @@ ship2 = Ship(impShip2, impShip2Small, speedMax_f3=3 << 3, accel_f3=2,
 ship = ship1
 camLock = False
 camX, camY = 92, 30
-lastCamX, lastCamY = camX, camY
 ship.px_f3 = camX << 3
 ship.py_f3 = camY << 3
 ship.angle = 180
@@ -708,9 +696,12 @@ while True:
         ship.angle = prevShip.angle
         ship.angleTarget = prevShip.angleTarget
 
+    ship.updateContainer()
+
     ship.speedLimited = False
     ship.dirSpeedLimited = False
-    for container in containers:
+    if ship.container:
+        container = ship.container
         for objDirSlowZone in container.dirSlowZones:
             x, y, w, h, dir = objDirSlowZone
             Zones.dirSpeedLimit(ship, 6, x, y, w, h, dir)
@@ -721,8 +712,7 @@ while True:
             x, y, w, h = objScanner
             Zones.speedLimit(ship, 4, x-5, y-5, w+10, h+10)
 
-    ship.angleLocked = False
-    for container in containers:
+        ship.angleLocked = False
         for objDock in container.docks:
             x, y, dir = objDock
             Zones.angleLock(ship, ((dir+1) & 0b11)*90, x-20, y-10, 40, 20)
@@ -739,16 +729,17 @@ while True:
     if not camLock:
         camX = (ship.px_f3 >> 3) - 36 + (ship.vx_f3 >> 3)
         camY = (ship.py_f3 >> 3) - 20 + (ship.vy_f3 >> 3)
-    camDX = camX - lastCamX
-    camDY = camY - lastCamY
-    lastCamX = camX
-    lastCamY = camY
+
+    Container.updateVisible(camX, camY, containers)
 
     fill(buffer, 0b00)
 
-    SpaceBits.render(camX, camY, camDX, camDY)
+    SpaceBits.render(camX, camY)
 
     for container in containers:
+        if not container.visible:
+            continue
+
         blitContainerMap(buffer, container, -camX, -camY)
 
         for objText in container.smallTexts:
@@ -763,6 +754,9 @@ while True:
 
     Scanner.update()
     for container in containers:
+        if not container.visible:
+            continue
+
         for objScanner in container.scanners:
             x, y, w, h = objScanner
             Scanner.render(x-camX, y-camY, w, h)

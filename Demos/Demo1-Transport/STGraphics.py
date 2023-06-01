@@ -1,6 +1,6 @@
 import math
-from utime import ticks_us, ticks_diff
 from array import array
+from utime import ticks_us, ticks_diff
 
 # from thumbyGrayscale import display as GSdisplay
 from STDisplay import display as GSdisplay
@@ -89,7 +89,7 @@ def blitText(buffer: ptr8, font, text, x: int, y: int, vertical=False):
                 srcX = fx + px
                 srcY = fy + py
                 v = imp[((srcY >> 3)*span+srcX)*8+(srcY & 0b111)]
-                if not (v & IMP_ALPHA):
+                if not v & IMP_ALPHA:
                     continue
                 dstX = cx + px
                 dstY = cy + py
@@ -140,7 +140,8 @@ def blit(buffer: ptr8, imp: ptr8, x: int, y: int, w: int, h: int):
 
 
 @micropython.viper
-def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: int, pivotX: int, pivotY: int):
+def blitRotate(buffer: ptr8, imp: ptr8, angle: int,
+               x: int, y: int, w: int, h: int, pivotX: int, pivotY: int):
     dirFlip = ptr8(dir_x_flip)
 
     dirDelta = ((angle + 22) // 45) & 0b111
@@ -177,7 +178,7 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
                 continue
 
             if v & IMP_DIR:
-                d1 = ((v & IMP_NORMAL) >> 3)
+                d1 = (v & IMP_NORMAL) >> 3
                 d2 = (d1 + dirDelta) & 0b111
                 if mx:
                     d3 = dirFlip[d2]
@@ -229,7 +230,8 @@ def blitRotate(buffer: ptr8, imp: ptr8, angle: int, x: int, y: int, w: int, h: i
 
 
 @micropython.viper
-def blitScale(buffer: ptr8, imp: ptr8, scale_f6: int, x: int, y: int, w: int, h: int, pivotX: int, pivotY: int, dir: int = 0):
+def blitScale(buffer: ptr8, imp: ptr8, scale_f6: int,
+              x: int, y: int, w: int, h: int, pivotX: int, pivotY: int, dir: int = 0):
     for srcY in range(h):
         for srcX in range(w):
             v = imp[((srcY >> 3)*w+srcX)*8+(srcY & 0b111)]
@@ -268,8 +270,8 @@ def blitContainerMap(buffer: ptr8, container, x: int, y: int):
     map = ptr8(container.map)
     impTiles = ptr8(container.impTiles[0])
 
-    x += int(container.x)
-    y += int(container.y)
+    x += int(container.x1)
+    y += int(container.y1)
 
     w, h = (columns*8), (rows*8)
 
@@ -341,10 +343,10 @@ def postShading(buffer: ptr8, shader: ptr16, light: int):
     for i in range(pixel_count):
         pixel = buffer[i]
 
-        if not (pixel & 0b10000000):  # Transparent
+        if not pixel & 0b10000000:  # Transparent
             continue
 
-        if not (pixel & 0b01000000):  # Flat
+        if not pixel & 0b01000000:  # Flat
             continue
 
         shading_rule = shader[pixel & 0b111]
@@ -372,8 +374,8 @@ def display(buffer: ptr32):
     scrGS = ptr8(GSdisplay.shading)
     bi = 0
     so = 0
-    for rowY in range(0, 40, 8):
-        for x in range(0, 72):
+    for _ in range(0, 40, 8):
+        for _ in range(0, 72):
             v1 = buffer[bi]
             bi += 1
             v2 = buffer[bi]
@@ -416,7 +418,7 @@ def perfStart():
 @micropython.native
 def perfStop():
     end = ticks_us()
-    global _perfStart, _perfTimes, _perfCount
+    global _perfCount
     if _perfCount < 5:
         _perfTimes[_perfCount] = ticks_diff(end, _perfStart)
         _perfCount += 1
@@ -424,7 +426,7 @@ def perfStop():
 
 @micropython.viper
 def perfRender():
-    global _perfTimes, _perfCount
+    global _perfCount
     bufBW = ptr8(GSdisplay.buffer)
     bufGS = ptr8(GSdisplay.shading)
     bd = ptr8(perfBmpDigits)

@@ -8,6 +8,7 @@ class PackReader:
         self.filePath = filePath
         self.areaLookup = {}
         self.containerLookup = {}
+        self.file = None
 
     def __enter__(self):
         self.file = open(self.filePath, 'rb')
@@ -173,18 +174,19 @@ class Area:
         self.routes[srcGate] = (dstArea, dstGate, time)
 
 
-class Container:
-    objectDefs = {
-        "DSZ": lambda con, obj: con.initDirSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4], dir=obj[5]),
-        "SZ": lambda con, obj: con.initSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
-        "P": lambda con, obj: con.initPad(x=obj[1], y=obj[2], dir=obj[3]),
-        "D": lambda con, obj: con.initDock(x=obj[1], y=obj[2], dir=obj[3]),
-        "LT": lambda con, obj: con.initLargeText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
-        "ST": lambda con, obj: con.initSmallText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
-        "S": lambda con, obj: con.initScanner(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
-        "G": lambda con, obj: con.initGate(id=obj[1], x=obj[2], y=obj[3], dir=obj[4])
-    }
+objectDefs = {
+    "DSZ": lambda con, obj: con.initDirSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4], dir=obj[5]),
+    "SZ": lambda con, obj: con.initSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
+    "P": lambda con, obj: con.initPad(x=obj[1], y=obj[2], dir=obj[3]),
+    "D": lambda con, obj: con.initDock(x=obj[1], y=obj[2], dir=obj[3]),
+    "LT": lambda con, obj: con.initLargeText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
+    "ST": lambda con, obj: con.initSmallText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
+    "S": lambda con, obj: con.initScanner(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
+    "G": lambda con, obj: con.initGate(id=obj[1], x=obj[2], y=obj[3], dir=obj[4])
+}
 
+
+class Container:
     def __init__(self, name, columns, rows, map, objData, impTiles=None):
         self.name = name
         self.columns = columns
@@ -204,50 +206,67 @@ class Container:
         self.gates = []
 
         # From area bounds
-        self.x = 0
-        self.y = 0
-        self.width = 0
-        self.height = 0
+        self.x1 = 0
+        self.y1 = 0
+        self.x2 = 0
+        self.y2 = 0
+
+        self.visible = False
 
     def initAreaBounds(self, x, y, w, h):
-        self.x = x
-        self.y = y
-        self.width = w
-        self.height = h
+        self.x1 = x
+        self.y1 = y
+        self.x2 = x + w
+        self.y2 = y + h
 
     def initObjectData(self):
         for obj in self.objData:
-            init = self.objectDefs.get(obj[0], None)
+            init = objectDefs.get(obj[0], None)
             if init:
                 init(self, obj)
 
     def initSprite(self, imp, x, y):
-        self.sprites.append((imp[0], self.x+x, self.y+y, imp[1], imp[2]))
+        self.sprites.append((imp[0], self.x1+x, self.y1+y, imp[1], imp[2]))
 
     def initDirSlowZone(self, x, y, w, h, dir):
-        self.dirSlowZones.append((self.x+x, self.y+y, w, h, dir))
+        self.dirSlowZones.append((self.x1+x, self.y1+y, w, h, dir))
 
     def initSlowZone(self, x, y, w, h):
-        self.slowZones.append((self.x+x, self.y+y, w, h))
+        self.slowZones.append((self.x1+x, self.y1+y, w, h))
 
     def initPad(self, x, y, dir):
-        self.pads.append((self.x+x, self.y+y, dir))
+        self.pads.append((self.x1+x, self.y1+y, dir))
 
     def initDock(self, x, y, dir):
-        self.docks.append((self.x+x, self.y+y, dir))
+        self.docks.append((self.x1+x, self.y1+y, dir))
 
     def initLargeText(self, text, x, y, dir):
-        self.largeTexts.append((text, self.x+x, self.y+y, dir))
+        self.largeTexts.append((text, self.x1+x, self.y1+y, dir))
 
     def initSmallText(self, text, x, y, dir):
-        self.smallTexts.append((text, self.x+x, self.y+y, dir))
+        self.smallTexts.append((text, self.x1+x, self.y1+y, dir))
 
     def initScanner(self, x, y, w, h):
-        self.scanners.append((self.x+x, self.y+y, w, h))
+        self.scanners.append((self.x1+x, self.y1+y, w, h))
 
     def initGate(self, id, x, y, dir):
-        gate = (id, self.x+x, self.y+y, dir)
+        gate = (id, self.x1+x, self.y1+y, dir)
         self.gates.append(gate)
+
+    @staticmethod
+    @micropython.native
+    def updateVisible(camX: int, camY: int, containers):
+        camX2 = camX + 72
+        camY2 = camY + 40
+        for container in containers:
+            cx1 = container.x1
+            cy1 = container.y1
+            cx2 = container.x2
+            cy2 = container.y2
+            if camX >= cx2 or camX2 <= cx1 or camY >= cy2 or camY2 <= cy1:
+                container.visible = False
+            else:
+                container.visible = True
 
 
 class Font:

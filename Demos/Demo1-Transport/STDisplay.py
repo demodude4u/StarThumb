@@ -16,15 +16,13 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 
-from utime import sleep_ms, ticks_diff, ticks_ms
-from machine import Pin, SPI, idle, mem32
 import _thread
-from os import stat
 from math import sqrt, floor
 from array import array
+from utime import sleep_ms, ticks_diff, ticks_ms
+from machine import Pin, SPI, idle, mem32
 from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR
 from thumbyHardware import HWID
-from sys import modules
 
 __version__ = '0.0.1'  # Based on thumbyGrayscale 3.0.0
 
@@ -179,7 +177,7 @@ class Grayscale:
 
     def _clearEmuFunctions(self):
         # Disable device controller functions
-        def _disabled(*arg, **kwdarg):
+        def _disabled(*arg, **kwdarg):  # pylint: disable=W0613
             pass
         # self.invert = _disabled
         # self.reset = _disabled
@@ -196,7 +194,7 @@ class Grayscale:
         self._res(1)
         sleep_ms(10)
 
-    def init_display(self):
+    def init_display(self):  # pylint: disable=E0202
         self.reset()
         self._cs(0)
         self._dc(0)
