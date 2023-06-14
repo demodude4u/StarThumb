@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="21" height="16" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#181818" nextlayerid="11" nextobjectid="55">
+<map version="1.10" tiledversion="1.10.1" orientation="orthogonal" renderorder="right-down" width="21" height="16" tilewidth="8" tileheight="8" infinite="0" backgroundcolor="#181818" nextlayerid="11" nextobjectid="64">
  <editorsettings>
   <export target="../Map.tmj" format="json"/>
  </editorsettings>
@@ -34,37 +34,49 @@
   </object>
   <object id="40" name="P" x="42" y="76">
    <properties>
+    <property name="Code" value="P3"/>
     <property name="Facing" type="int" propertytype="Cardinal" value="0"/>
+    <property name="Nav" type="object" value="58"/>
    </properties>
    <point/>
   </object>
   <object id="41" name="P" x="52" y="102">
    <properties>
+    <property name="Code" value="P4"/>
     <property name="Facing" type="int" propertytype="Cardinal" value="3"/>
+    <property name="Nav" type="object" value="63"/>
    </properties>
    <point/>
   </object>
   <object id="42" name="P" x="42" y="52">
    <properties>
+    <property name="Code" value="P2"/>
     <property name="Facing" type="int" propertytype="Cardinal" value="0"/>
+    <property name="Nav" type="object" value="57"/>
    </properties>
    <point/>
   </object>
   <object id="43" name="P" x="52" y="26">
    <properties>
+    <property name="Code" value="P1"/>
     <property name="Facing" type="int" propertytype="Cardinal" value="1"/>
+    <property name="Nav" type="object" value="62"/>
    </properties>
    <point/>
   </object>
   <object id="44" name="D" x="92" y="94">
    <properties>
+    <property name="Code" value="D2"/>
     <property name="Facing" type="int" propertytype="Cardinal" value="3"/>
+    <property name="Nav" type="object" value="60"/>
    </properties>
    <point/>
   </object>
   <object id="45" name="D" x="92" y="34">
    <properties>
+    <property name="Code" value="D1"/>
     <property name="Facing" type="int" propertytype="Cardinal" value="1"/>
+    <property name="Nav" type="object" value="55"/>
    </properties>
    <point/>
   </object>
@@ -73,6 +85,60 @@
    <properties>
     <property name="Facing" type="int" propertytype="Cardinal" value="2"/>
    </properties>
+  </object>
+  <object id="55" name="N" x="92" y="56">
+   <properties>
+    <property name="Nav" type="object" value="57"/>
+    <property name="Nav2" type="object" value="45"/>
+    <property name="Nav3" type="object" value="60"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="56" name="N" x="168" y="56">
+   <properties>
+    <property name="Nav" type="object" value="55"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="57" name="N" x="64" y="56">
+   <properties>
+    <property name="Nav" type="object" value="58"/>
+    <property name="Nav2" type="object" value="62"/>
+    <property name="Nav3" type="object" value="42"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="58" name="N" x="64" y="72">
+   <properties>
+    <property name="Nav" type="object" value="60"/>
+    <property name="Nav2" type="object" value="40"/>
+    <property name="Nav3" type="object" value="63"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="60" name="N" x="92" y="72">
+   <properties>
+    <property name="Nav" type="object" value="61"/>
+    <property name="Nav2" type="object" value="44"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="61" name="N" x="168" y="72">
+   <point/>
+  </object>
+  <object id="62" name="N" x="64" y="40">
+   <properties>
+    <property name="Nav" type="object" value="43"/>
+    <property name="Nav2" type="object" value="57"/>
+   </properties>
+   <point/>
+  </object>
+  <object id="63" name="N" x="64" y="88">
+   <properties>
+    <property name="Nav" type="object" value="41"/>
+    <property name="Nav2" type="object" value="58"/>
+   </properties>
+   <point/>
   </object>
  </objectgroup>
  <objectgroup id="10" name="References" visible="0">

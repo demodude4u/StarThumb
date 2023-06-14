@@ -8,18 +8,11 @@
             "y": 0
         },
         {
-            "fileName": "Beta Connector.tmx",
-            "height": 80,
+            "fileName": "Beta Gates.tmx",
+            "height": 256,
             "width": 64,
             "x": -64,
-            "y": 24
-        },
-        {
-            "fileName": "Beta Gates.tmx",
-            "height": 192,
-            "width": 64,
-            "x": -128,
-            "y": -32
+            "y": -64
         }
     ],
     "onlyShowAdjacentMaps": false,

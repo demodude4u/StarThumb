@@ -1,20 +1,21 @@
 import xml.etree.ElementTree as ET
 import json
 import struct
-from PIL import Image
 from array import array
+from PIL import Image
 
 
 class PackWriter:
     OBJ_KEY_ORDER = {
-        "DSZ": ["name", "x", "y", "width", "height", "Facing"],
-        "SZ": ["name", "x", "y", "width", "height"],
-        "P": ["name", "x", "y", "Facing"],
-        "D": ["name", "x", "y", "Facing"],
-        "LT": ["name", "text", "x", "y", "rotation"],
-        "ST": ["name", "text", "x", "y", "rotation"],
-        "S": ["name", "x", "y", "width", "height"],
-        "G": ["name", "ID", "x", "y", "Facing"],
+        "DSZ": ["name", "id", "x", "y", "width", "height", "Facing"],
+        "SZ": ["name", "id", "x", "y", "width", "height"],
+        "P": ["name", "id", "x", "y", "Code", "Facing", "Nav"],
+        "D": ["name", "id", "x", "y", "Code", "Facing", "Nav"],
+        "LT": ["name", "id", "x", "y", "text", "rotation"],
+        "ST": ["name", "id", "x", "y", "text", "rotation"],
+        "S": ["name", "id", "x", "y", "width", "height"],
+        "G": ["name", "id", "x", "y", "Code", "Facing", "Nav"],
+        "N": ["name", "id", "x", "y", "Nav", "Nav2", "Nav3"]
     }
     IMG_COLOR_CONVERT = {
         0x4040da: 0b11101000,
@@ -68,6 +69,8 @@ class PackWriter:
                 objDict['name'],
                 obj.find(
                     "./properties/property[@name='World']").attrib['value'],
+                obj.find(
+                    "./properties/property[@name='Code']").attrib['value'],
                 int(objDict['x']),
                 int(objDict['y'])
             ])
@@ -86,10 +89,12 @@ class PackWriter:
 
                     # Find destination object's name
                     destName = root.find(
-                        f"./objectgroup[@id='2']/object[@id='{destObjId}']").attrib['name']
+                        f"./objectgroup[@id='2']/object[@id='{destObjId}']").find(
+                        "./properties/property[@name='Code']").attrib['value']
 
                     routes.append([
-                        objDict['name'],
+                        obj.find(
+                            "./properties/property[@name='Code']").attrib['value'],
                         gateName,
                         destName,
                         arrival,
@@ -178,33 +183,49 @@ class PackWriter:
         self.writeSection(struct.pack(
             'HH', image.width, image.height) + buffer)
 
-    def writeSplitImage(self, filePath):
+    def writeSplitImage(self, filePath, frames=0):
         print("SI", filePath)
         image = Image.open(self.cd+filePath).convert("RGB")
 
+        if frames:
+            multi = True
+        else:
+            multi = False
+            frames = 1
+
+        width = image.width // frames
         height = image.height // 2
         paddedHeight = 8 * ((height + 7) // 8)
-        buffer = bytearray(image.width * paddedHeight)
+        buffers = [bytearray(width * paddedHeight) for _ in range(frames)]
 
         pixels = image.getdata()
-        si1 = 0
-        si2 = image.width * height
-        for y in range(height):
-            for x in range(image.width):
-                v = 0
-                for si in [si1, si2]:
-                    pixel = pixels[si]
-                    rgb = pixel[0] << 16 | pixel[1] << 8 | pixel[2]
-                    try:
-                        v |= self.IMG_COLOR_CONVERT[rgb]
-                    except KeyError:
-                        raise ValueError(
-                            "Unknown color encountered: {:#06x}".format(rgb))
-                buffer[((y >> 3)*image.width+x)*8+(y & 0b111)] = v
-                si1 += 1
-                si2 += 1
-        self.writeSection(struct.pack(
-            'HH', image.width, height) + buffer)
+        for i in range(frames):
+            buffer = buffers[i]
+            si1 = width * i
+            si2 = image.width * height + si1
+            for y in range(height):
+                for x in range(width):
+                    v = 0
+                    for si in [si1, si2]:
+                        pixel = pixels[si]
+                        rgb = pixel[0] << 16 | pixel[1] << 8 | pixel[2]
+                        try:
+                            v |= self.IMG_COLOR_CONVERT[rgb]
+                        except KeyError:
+                            raise ValueError(
+                                "Unknown color encountered: {:#06x}".format(rgb))
+                    buffer[((y >> 3)*width+x)*8+(y & 0b111)] = v
+                    si1 += 1
+                    si2 += 1
+                si1 += image.width - width
+                si2 += image.width - width
+
+        if multi:
+            self.writeSection(struct.pack(
+                'HHB', width, height, frames) + b''.join(buffers))
+        else:
+            self.writeSection(struct.pack(
+                'HH', width, height) + b''.join(buffers))
 
     def writeShader(self, filePath):
         print("S", filePath)

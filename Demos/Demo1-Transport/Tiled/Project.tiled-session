@@ -3,7 +3,7 @@
         "height": 4300,
         "width": 2
     },
-    "activeFile": "Tiles.tsx",
+    "activeFile": "Beta Port.tmx",
     "expandedProjectPaths": [
         "."
     ],
@@ -23,11 +23,11 @@
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 4,
+            "scale": 8,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 52.125,
-                "y": 32
+                "x": 52.0625,
+                "y": 31.9375
             }
         },
         "Alpha Port.tmx": {
@@ -35,11 +35,11 @@
                 2,
                 10
             ],
-            "scale": 4,
+            "scale": 5.5,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 84.125,
-                "y": 64
+                "x": 84.0909090909091,
+                "y": 64.09090909090911
             }
         },
         "Beta Connector.tmx": {
@@ -47,22 +47,22 @@
                 2,
                 10
             ],
-            "scale": 3,
-            "selectedLayer": 0,
+            "scale": 8,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 32.166666666666686,
-                "y": 40
+                "x": 32.0625,
+                "y": 40.0625
             }
         },
         "Beta Gates.tmx": {
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 3,
-            "selectedLayer": 0,
+            "scale": 5.5,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 32.166666666666686,
-                "y": 95.99999999999999
+                "x": 54.63636363636363,
+                "y": 74.45454545454545
             }
         },
         "Beta Port.tmx": {
@@ -70,11 +70,11 @@
                 2,
                 10
             ],
-            "scale": 2,
-            "selectedLayer": 2,
+            "scale": 5.5,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 72.25,
-                "y": 64
+                "x": 39.18181818181819,
+                "y": 9
             }
         },
         "Gamma Connector.tmx": {
@@ -89,11 +89,11 @@
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 4,
-            "selectedLayer": 0,
+            "scale": 5.5,
+            "selectedLayer": 1,
             "viewCenter": {
-                "x": 32.125,
-                "y": 52
+                "x": 32.09090909090909,
+                "y": 52.09090909090911
             }
         },
         "Gamma Port.tmx": {
@@ -103,8 +103,8 @@
             "scale": 5.5,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 72.09090909090911,
-                "y": 76
+                "x": 72.0909090909091,
+                "y": 76.09090909090911
             }
         },
         "Map.tmx": {
@@ -122,8 +122,8 @@
             "scale": 131.93125,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 2.137476905585295,
-                "y": 3.623099152020465
+                "x": 4.0058742716376905,
+                "y": 3.9982945662987346
             }
         },
         "Station8.tsx": {
@@ -168,17 +168,17 @@
         "Tiles.tsx"
     ],
     "project": "Project.tiled-project",
-    "property.type": "GateTravel",
+    "property.type": "object",
     "recentFiles": [
         "Alpha Gate.tmx",
         "Alpha Port.tmx",
-        "Beta Port.tmx",
-        "Beta Gates.tmx",
-        "Beta Connector.tmx",
-        "Gamma Port.tmx",
-        "Gamma Gate.tmx",
-        "Star System.tmx",
         "Tiles.tsx",
+        "Star System.tmx",
+        "Gamma Gate.tmx",
+        "Gamma Port.tmx",
+        "Beta Connector.tmx",
+        "Beta Gates.tmx",
+        "Beta Port.tmx",
         "Alpha Connector.tmx",
         "Gamma Connector.tmx",
         "Map.tmx"

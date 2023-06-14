@@ -7,7 +7,7 @@ import random
 
 buffer = bytearray(72*40)
 
-from STData import PackReader, Font, Container  # NOQA
+from STData import PackReader, Font, Container, NODE_TYPE_PAD, NODE_TYPE_DOCK, NODE_TYPE_GATE  # NOQA
 
 with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
     shader = pack.readShader()
@@ -24,11 +24,18 @@ with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
     impGateSmallBlur1 = pack.readIMP()
     impGateSmallBlur2 = pack.readIMP()
 
-    impShipSmall = pack.readIMP()
+    impShipSm = pack.readIMP()
     impShip = pack.readIMP()
 
-    impShip2Small = pack.readIMP()
+    impShip2Sm = pack.readIMP()
     impShip2 = pack.readIMP()
+
+    impShipSkull = pack.readIMP()
+    impShipMF = pack.readIMP()
+    impShipThumb = pack.readIMP()
+    impShipNyan = pack.readIMPFrames()
+
+    impLogo32 = pack.readIMP()
 
     pack.loadContainers(7, impTiles)
     pack.loadAreas(3)
@@ -74,15 +81,31 @@ print(gc.mem_free())
 # - TestAnimate
 # - TestParticles
 
-area = starSystem.areas["Alpha"]
-containers = area.containers
+area = None
+containers = []
+
+SHIP_SIZECLASS_SMALL = const(0)
+SHIP_SIZECLASS_MEDIUM = const(1)
+
+
+# TODO this is terrible and slow
+STOPPING_DISTANCES = [0 for _ in range((8 << 3) + 1)]  # Max speed
+STANDARD_DAMPENING_F6 = 62
+for i in range(len(STOPPING_DISTANCES)):
+    v_f3 = i
+    p_f3 = 0
+    while v_f3:
+        v_f3 = (v_f3 * STANDARD_DAMPENING_F6) >> 6
+        p_f3 += v_f3
+    STOPPING_DISTANCES[i] = p_f3 >> 3
 
 
 class Ship:
-    def __init__(self, impShip, impTinyShip, speedMax_f3, accel_f3,
+    def __init__(self, impShip, impTinyShip, sizeClass, speedMax_f3, accel_f3,
                  dampening_f6, boost_f3, boostDelay, rotateSpeed):
         self.impShip = impShip
         self.impTinyShip = impTinyShip
+        self.sizeClass = sizeClass
         self.speedMax_f3 = speedMax_f3
         self.accel_f3 = accel_f3
         self.dampening_f6 = dampening_f6
@@ -108,6 +131,24 @@ class Ship:
         self.gateSpeed_f3 = 0
         self.gateDistance_f3 = 0
         self.container = None
+        self.autopilot = False
+        self.apTargetAreaCode = None
+        self.apTargetDestinationCode = None
+        self.apCurrentDestinationCode = None
+        self.apCurrentPoint = None
+        self.apNextPoint = None
+
+        if len(impShip) < 4:
+            self.anim = False
+            self.frameCount = 0
+            self.frameTime = 0
+        else:
+            frameCount = impShip[3]
+            self.anim = True
+            self.frameCount = frameCount
+            self.frameTime = 30 // frameCount  # TODO configurable
+        self.frameIndex = 0
+        self.frameDuration = 0
 
     def inputButtons(self):
         inputX_f3, inputY_f3 = 0, 0
@@ -130,6 +171,121 @@ class Ship:
                 inputY_f3 = -5
         self.inputX_f3 = inputX_f3
         self.inputY_f3 = inputY_f3
+
+    def inputAutopilot(self):
+        if not self.autopilot:
+            self.inputX_f3 = 0
+            self.inputY_f3 = 0
+            return
+
+        sx = self.px_f3 >> 3
+        sy = self.py_f3 >> 3
+
+        # Find Current Destination (Destination Code)
+        if not self.apCurrentDestinationCode:
+            if area.code == self.apTargetAreaCode:
+                if self.apTargetDestinationCode:
+                    self.apCurrentDestinationCode = self.apTargetDestinationCode
+                else:  # Find a Dock or Pad
+                    if self.sizeClass == SHIP_SIZECLASS_SMALL:
+                        destinationCodeChoices = [
+                            np.obj[0] for np in area.navPoints if np.nodeType == NODE_TYPE_PAD]
+                    else:
+                        destinationCodeChoices = [
+                            np.obj[0] for np in area.navPoints if np.nodeType == NODE_TYPE_DOCK]
+                    self.apCurrentDestinationCode = destinationCodeChoices[random.randrange(
+                        len(destinationCodeChoices))]
+            else:  # Find the correct Gate
+                # print("Finding Gate towards", self.apTargetAreaCode)
+                # for k, v in area.gateDestinations.items():
+                #     print("\t", k, " ==> ", v[0], v[1].code, v[2])
+                self.apCurrentDestinationCode = area.gateDestinations[self.apTargetAreaCode][0]
+            # print("Target Destination", self.apCurrentDestinationCode)
+
+        # Find Nearest Point
+        if not self.apCurrentPoint:
+            nearestPoint = None
+            nearestDistance = -1
+            for navPoint in area.navPoints:
+                distance = abs(sx - navPoint.x) + abs(sy - navPoint.y)
+                if not nearestPoint or distance < nearestDistance:
+                    nearestPoint = navPoint
+                    nearestDistance = distance
+            self.apCurrentPoint = nearestPoint
+
+        navPoint = self.apCurrentPoint
+        nx = navPoint.x
+        ny = navPoint.y
+
+        dx = nx - sx
+        dy = ny - sy
+        adx = abs(dx)
+        ady = abs(dy)
+
+        nextNavPoint = self.apNextPoint
+        if nextNavPoint:
+            dx2 = nextNavPoint.x - nx
+            dy2 = nextNavPoint.y - ny
+            # Checks if heading same direction
+            if (dx * dx2 > 0 or dy * dy2 > 0) and (abs(dx) > abs(dy) == abs(dx2) > abs(dy2)):
+                slowdown = False
+            else:
+                slowdown = True
+        else:
+            slowdown = True
+
+        avx_f3 = abs(ship.vx_f3)
+        avy_f3 = abs(ship.vy_f3)
+
+        if slowdown:
+            if avx_f3 or avy_f3:
+                if avx_f3 > avy_f3:
+                    stopDistance = (
+                        STOPPING_DISTANCES[avx_f3] * STANDARD_DAMPENING_F6) // ship.dampening_f6
+                    if stopDistance + 5 < adx:
+                        slowdown = False
+                else:
+                    stopDistance = (
+                        STOPPING_DISTANCES[avy_f3] * STANDARD_DAMPENING_F6) // ship.dampening_f6
+                    if stopDistance + 5 < ady:
+                        slowdown = False
+                # print(slowdown, dx, dy,"|", avx_f3, avy_f3, "|", stopDistance)
+            else:
+                slowdown = False
+                # print(slowdown, dx, dy,"|", avx_f3, avy_f3)
+
+        inputX_f3, inputY_f3 = 0, 0
+        if slowdown:
+            pass
+        elif adx < ady and adx > 4:
+            inputX_f3 = 8 if dx > 0 else -8
+            inputY_f3 = 0
+        elif ady > 4:
+            inputX_f3 = 0
+            inputY_f3 = 8 if dy > 0 else -8
+        elif adx:
+            inputX_f3 = 8 if dx > 0 else -8
+        elif ady:
+            inputY_f3 = 8 if dy > 0 else -8
+        self.inputX_f3 = inputX_f3
+        self.inputY_f3 = inputY_f3
+
+        # Next Point
+        # print(abs(dx) + abs(dy))
+        if abs(dx) <= 6 and abs(dy) <= 6:
+            # print("Next Point")
+            if navPoint.nodeType:  # Not Basic
+                code = navPoint.obj[0]
+                if area.code == self.apTargetAreaCode and code == self.apCurrentDestinationCode:
+                    self.apCurrentPoint = None
+                    self.apCurrentDestinationCode = None
+                    self.autopilot = False
+            if self.autopilot:
+                self.apCurrentPoint = navPoint.destinations[self.apCurrentDestinationCode][0]
+                if not self.apCurrentPoint.nodeType:  # Basic
+                    self.apNextPoint = self.apCurrentPoint.destinations[self.apCurrentDestinationCode][0]
+                else:
+                    self.apNextPoint = None
 
     @micropython.native
     def updateContainer(self):
@@ -253,9 +409,10 @@ class Ship:
             vy_f3 = speedMax_f3 if boostFrames < boostDelay else boost_f3
 
         # TODO get rid of floats
-        if abs(ship.vx_f3) >= speedMax_f3 or abs(ship.vy_f3) >= speedMax_f3:
+        if abs(vx_f3) or abs(vy_f3):
+            # if abs(vx_f3) >= speedMax_f3 or abs(vy_f3) >= speedMax_f3:
             self.angleTarget = int(
-                180*(math.atan2(ship.vy_f3, ship.vx_f3)/3.14159))
+                180*(math.atan2(vy_f3, vx_f3)/3.14159))
 
         if angleLocked:
             self.angleTarget = angleLock
@@ -290,6 +447,13 @@ class Ship:
         self.boostFrames = boostFrames
         self.angle = angle
 
+        if self.anim:
+            if self.frameDuration >= self.frameTime:
+                self.frameDuration = 0
+                self.frameIndex = (self.frameIndex + 1) % self.frameCount
+            else:
+                self.frameDuration += 1
+
     @micropython.native
     def moveGateTravelFrame(self):
         vx_f3 = self.vx_f3
@@ -300,7 +464,11 @@ class Ship:
 
     @micropython.native
     def render(self, camX: int, camY: int):
-        imp, iw, ih = self.impShip
+        if self.anim:
+            imps, iw, ih, _ = self.impShip
+            imp = imps[self.frameIndex]
+        else:
+            imp, iw, ih = self.impShip
         hw = iw >> 1
         hh = ih >> 1
         x = (self.px_f3 >> 3) - camX - hw
@@ -309,7 +477,11 @@ class Ship:
 
     @micropython.native
     def renderTiny(self, camX: int, camY: int):
-        imp, iw, ih = self.impTinyShip
+        if self.anim:
+            imps, iw, ih, _ = self.impTinyShip
+            imp = imps[self.frameIndex]
+        else:
+            imp, iw, ih = self.impTinyShip
         hw = iw >> 1
         hh = ih >> 1
         x = (((self.px_f3 >> 3) - camX) >> 1) - hw
@@ -318,7 +490,11 @@ class Ship:
 
     @micropython.native
     def renderZoomed(self, camX: int, camY: int, zoom_f6: int):
-        imp, iw, ih = self.impShip
+        if self.anim:
+            imps, iw, ih, _ = self.impShip
+            imp = imps[self.frameIndex]
+        else:
+            imp, iw, ih = self.impShip
         hw = iw >> 1
         hh = ih >> 1
         x = ((zoom_f6 * ((self.px_f3 >> 3) - camX)) >> 6) - hw
@@ -507,9 +683,9 @@ class GateTravel:
     def loop():
         global camX, camY, area, containers
 
-        srcGateId, _, _, srcGateDir = ship.gate
-        dstArea, dstGateId, totalSeconds = area.routes[srcGateId]
-        dstGate = dstArea.gateLookup[dstGateId]
+        srcGateCode, _, _, srcGateDir = myShip.gate
+        dstArea, dstGateCode, totalSeconds = area.gateRouteLookup[srcGateCode]
+        dstGate = dstArea.gateLookup[dstGateCode]
         _, dstGateX, dstGateY, dstGateDir = dstGate
 
         travelStage = 0
@@ -542,7 +718,7 @@ class GateTravel:
             stageFrames += 1
 
             if travelStage == 0:  # Stage 0 Speed up (zoom out)
-                ship.angle = startAngle
+                myShip.angle = startAngle
                 zoom_f6 = 64 - ((32 * stageFrames) // zoomTime)
                 speed_f3 = speedStart_f3 + \
                     (((speedTurn_f3 - speedStart_f3) * stageFrames) // zoomTime)
@@ -553,8 +729,8 @@ class GateTravel:
                 fps = 30 + ((30 * stageFrames) // zoomTime)
 
             elif travelStage == 1:  # Stage 1 Round the corner
-                ship.angle = (startAngle + 360 +
-                              ((rotate * stageFrames) // turnTime)) % 360
+                myShip.angle = (startAngle + 360 +
+                                ((rotate * stageFrames) // turnTime)) % 360
                 zoom_f6 = 32
                 speed_f3 = speedTurn_f3
                 if stageFrames > turnTime:
@@ -564,7 +740,7 @@ class GateTravel:
                 fps = 60
 
             elif travelStage == 2:  # Stage 2 Slow down (zoom in)
-                ship.angle = endAngle
+                myShip.angle = endAngle
                 zoom_f6 = 32 + ((32 * stageFrames) // zoomTime)
                 speed_f3 = speedTurn_f3 - \
                     (((speedTurn_f3 - speedStart_f3) * stageFrames) // zoomTime)
@@ -576,27 +752,27 @@ class GateTravel:
 
             setFPS(fps)
 
-            angleRad = (ship.angle * 3.14159) / 180.0
-            ship.vx_f3 = int(speed_f3 * math.cos(angleRad))
-            ship.vy_f3 = int(speed_f3 * math.sin(angleRad))
+            angleRad = (myShip.angle * 3.14159) / 180.0
+            myShip.vx_f3 = int(speed_f3 * math.cos(angleRad))
+            myShip.vy_f3 = int(speed_f3 * math.sin(angleRad))
 
-            ship.moveGateTravelFrame()
+            myShip.moveGateTravelFrame()
 
             zhw, zhh = (64 * 36) // zoom_f6, (64 * 20) // zoom_f6
 
             if gateFrame >= gateRate:
                 gateFrame = 0
             if gateFrame == 0:
-                rad = math.atan2(ship.vy_f3, ship.vx_f3)
+                rad = math.atan2(myShip.vy_f3, myShip.vx_f3)
                 dist_f3 = (zhw + 8) << 3
-                gateX_f3 = int(ship.px_f3 + dist_f3 * math.cos(rad))
-                gateY_f3 = int(ship.py_f3 + dist_f3 * math.sin(rad))
-            gateX_f3 -= ship.vx_f3
-            gateY_f3 -= ship.vy_f3
+                gateX_f3 = int(myShip.px_f3 + dist_f3 * math.cos(rad))
+                gateY_f3 = int(myShip.py_f3 + dist_f3 * math.sin(rad))
+            gateX_f3 -= myShip.vx_f3
+            gateY_f3 -= myShip.vy_f3
             gateFrame += 1
 
-            camX = (ship.px_f3 >> 3) - zhw + (ship.vx_f3 >> 3)
-            camY = (ship.py_f3 >> 3) - zhh + (ship.vy_f3 >> 3)
+            camX = (myShip.px_f3 >> 3) - zhw + (myShip.vx_f3 >> 3)
+            camY = (myShip.py_f3 >> 3) - zhh + (myShip.vy_f3 >> 3)
 
             fill(buffer, 0b00)
 
@@ -605,13 +781,13 @@ class GateTravel:
             SpaceBits.renderZoomed(camX, camY, zoom_f6)
 
             if zoom_f6 > 32:
-                ship.renderZoomed(camX, camY, zoom_f6)
+                myShip.renderZoomed(camX, camY, zoom_f6)
                 GateTravel.renderGateZoomed(
-                    gateX_f3, gateY_f3, camX, camY, ship.angle, zoom_f6)
+                    gateX_f3, gateY_f3, camX, camY, myShip.angle, zoom_f6)
             else:
-                ship.renderTiny(camX, camY)
+                myShip.renderTiny(camX, camY)
                 GateTravel.renderGateTiny(
-                    gateX_f3, gateY_f3, camX, camY, ship.angle)
+                    gateX_f3, gateY_f3, camX, camY, myShip.angle)
 
             postShading(buffer, shader, lightAngle)
             display(buffer)
@@ -624,13 +800,15 @@ class GateTravel:
                 area = dstArea
                 containers = area.containers
 
-                ship.gateLocked = True
-                ship.gateEnter = True
-                ship.gate = dstGate
-                ship.gateDistance_f3 = (0-36) << 3
-                ship.gateSpeed_f3 = 5 << 3
-                ship.px_f3 = dstGateX << 3
-                ship.py_f3 = dstGateY << 3
+                myShip.apCurrentDestinationCode = None
+                myShip.apCurrentPoint = None
+                myShip.gateLocked = True
+                myShip.gateEnter = True
+                myShip.gate = dstGate
+                myShip.gateDistance_f3 = (0-36) << 3
+                myShip.gateSpeed_f3 = 5 << 3
+                myShip.px_f3 = dstGateX << 3
+                myShip.py_f3 = dstGateY << 3
                 setFPS(30)
                 break
 
@@ -656,79 +834,227 @@ class GateTravel:
         blitScale(buffer, imp, zoom_f6, x, y, iw, ih, hw, hh, dir)
 
 
-ship1 = Ship(impShip, impShipSmall, speedMax_f3=2 << 3, accel_f3=1,
-             dampening_f6=62, boost_f3=3 << 3, boostDelay=60, rotateSpeed=5)
-ship2 = Ship(impShip2, impShip2Small, speedMax_f3=3 << 3, accel_f3=2,
-             dampening_f6=60, boost_f3=4 << 3, boostDelay=45, rotateSpeed=8)
+area = starSystem.areaLookup["AAA"]
+containers = area.containers
+ships = []
 
-ship = ship1
+
+def shipMedium(imp, impSm):
+    return Ship(imp, impSm, sizeClass=SHIP_SIZECLASS_MEDIUM, speedMax_f3=2 << 3, accel_f3=1,
+                dampening_f6=62, boost_f3=3 << 3, boostDelay=60, rotateSpeed=5)
+
+
+def shipSmall(imp, impSm):
+    return Ship(imp, impSm, sizeClass=SHIP_SIZECLASS_SMALL, speedMax_f3=3 << 3, accel_f3=2,
+                dampening_f6=60, boost_f3=4 << 3, boostDelay=45, rotateSpeed=8)
+
+
+def shipNyan(imp, impSm):
+    return Ship(imp, impSm, sizeClass=SHIP_SIZECLASS_SMALL, speedMax_f3=4, accel_f3=2,
+                dampening_f6=60, boost_f3=1 << 3, boostDelay=45, rotateSpeed=8)
+
+
+myShip1 = shipMedium(impShip, impShipSm)
+myShip2 = shipSmall(impShip2, impShip2Sm)
+
+shipConfigs = {
+    "ship2": (shipSmall, impShip2, impShip2Sm),
+    "ship": (shipMedium, impShip, impShipSm),
+    "skull": (shipMedium, impShipSkull, None),
+    "MF": (shipMedium, impShipMF, None),
+    "thumb": (shipSmall, impShipThumb, None),
+    "nyan": (shipNyan, impShipNyan, None),
+    "logo": (shipSmall, impLogo32, None)
+}
+
+
+def shipNamed(shipKey):
+    sat, imp, impSm = shipConfigs[shipKey]
+    return sat(imp, impSm)
+
+
+myShip = myShip1
+ships.append(myShip)
 camLock = False
 camX, camY = 92, 30
-ship.px_f3 = camX << 3
-ship.py_f3 = camY << 3
-ship.angle = 180
-ship.angleTarget = ship.angle
+camDolly = False
+camDollyX1 = 0
+camDollyY1 = 0
+camDollyX2 = 0
+camDollyY2 = 0
+camDollyTime = 0
+camDollyFrame = 0
+myShip.px_f3 = camX << 3
+myShip.py_f3 = camY << 3
+myShip.angle = 180
+myShip.angleTarget = myShip.angle
 lightAngle = 0
+scripted = False
+scriptFrame = 0
+scriptIndex = 0
+script = []
 
-# Teaser 1 - Pad and Scanner
-# camLock = True
-# camX, camY = 98, 68
-# ship = ship2
-# ship.px_f3 = 126 << 3
-# ship.py_f3 = 92 << 3
-# ship.angle = 90
-# ship.angleTarget = ship.angle
-# lightAngle = 5
-# ship.accel_f3 = 1
+
+def scriptSpawnShip(shipList, listKey, shipKey, x, y, targetArea=None, targetDestination=None):
+    ship = shipNamed(shipKey)
+    ship.px_f3 = x << 3
+    ship.py_f3 = y << 3
+    if targetArea or targetDestination:
+        ship.autopilot = True
+        ship.apTargetAreaCode = targetArea
+        ship.apTargetDestinationCode = targetDestination
+    shipList[listKey] = ship
+    ships.append(ship)
+
+
+def scriptDespawnShip(shipList, listKey):
+    ship = shipList.pop(listKey)
+    ships.remove(ship)
+
+
+def scriptCamDolly(dx, dy, speed_f3):
+    global camDolly, camDollyX1, camDollyY1, camDollyX2, camDollyY2, camDollyTime, camDollyFrame
+    camDolly = True
+    camDollyX1 = camX
+    camDollyY1 = camY
+    camDollyX2 = camX + dx
+    camDollyY2 = camY + dy
+    distance_f3 = round(math.sqrt((dx*dx)+(dy*dy)) * 8)
+    camDollyTime = (distance_f3 + speed_f3 - 1) // speed_f3
+    camDollyFrame = 0
+
+
+# Teaser #2: Gate Traffic
+# - Wait to start sequence, when any d-pad is pressed to start
+# - Start with lower right of beta gates, showing north and east paths
+# - One ship goes north, next ship turns right
+# - Pan slowly to show entire intersection
+# - Many ships pass through intersection
+camLock = True
+area = starSystem.areaLookup["BBB"]
+containers = area.containers
+cx0, cy0 = containers[0].x1, containers[0].y1
+cx1, cy1 = containers[1].x1, containers[1].y1
+camX, camY = cx0-32, cy0+89
+lightAngle = 6
+npc = {}
+script = [
+    (1, scriptSpawnShip, [npc, "open1",
+     "ship2", cx1+32, cy1+245, "BBB", "N1"]),
+    (1, scriptSpawnShip, [npc, "eggSkull",
+     "skull", cx1+24, cy1+88, "BBB", "D1"]),
+    (30, scriptSpawnShip, [npc, "open2",
+     "ship", cx1+32, cy1+245, "BBB", "D1"]),
+    (70, scriptDespawnShip, [npc, "open1"]),
+    (70, scriptSpawnShip, [npc, "pair1", "ship2", cx0+97, cy0+52, "AAA"]),
+    (90, scriptCamDolly, [0, -20, 4]),
+    (90, scriptSpawnShip, [npc, "pair2", "ship2", cx0+97, cy0+52, "AAA"]),
+    (130, scriptCamDolly, [9, -25, 4]),
+    (130, scriptSpawnShip, [npc, "eggThumb", "thumb", cx0+97, cy0+52, "GGG"]),
+    (150, scriptSpawnShip, [npc, "eggMF", "MF", cx1+24, cy1+88, "BBB", "D1"]),
+    (150, scriptDespawnShip, [npc, "eggSkull"]),
+    (190, scriptCamDolly, [-25, -8, 4]),
+    (205, scriptDespawnShip, [npc, "open2"]),
+    (240, scriptDespawnShip, [npc, "pair1"]),
+    (250, scriptCamDolly, [30, -80, 6]),
+    (260, scriptDespawnShip, [npc, "pair2"]),
+    (265, scriptDespawnShip, [npc, "eggMF"]),
+    (300, scriptSpawnShip, [npc, "logo", "logo", cx0+42, cy0-27]),
+    (315, scriptDespawnShip, [npc, "eggThumb"]),
+    (340, scriptSpawnShip, [npc, "eggNyan",
+     "nyan", cx0-56, cy0-12, "BBB", "ScriptNyan"]),
+]
+scripted = True
+
+gc.collect()
 
 while True:
     perfStart()
 
+    # TODO TESTING!
+    # if not myShip.autopilot:
+    #     areaChoices = [a for a in starSystem.areas if a != area]
+    #     myShip.apTargetAreaCode = areaChoices[random.randrange(
+    #         len(areaChoices))].code
+    #     myShip.autopilot = True
+
+    if scripted:
+        # while not buttonR.pressed():
+        #     pass
+        if scriptFrame > 0 or buttonR.justPressed():
+            scriptFrame += 1
+            # print(scriptFrame)
+        while True:
+            if scriptIndex >= len(script):
+                # scripted = False
+                break
+            frame, action, args = script[scriptIndex]
+            if scriptFrame == frame:
+                action(*args)
+                scriptIndex += 1
+                continue
+            break
+
     if buttonA.justPressed():
         lightAngle = (lightAngle + 1) % 8
-    if buttonB.justPressed() and not ship.gateLocked:
-        prevShip = ship
-        ship = ship2 if ship == ship1 else ship1
-        ship.px_f3 = prevShip.px_f3
-        ship.py_f3 = prevShip.py_f3
-        ship.vx_f3 = prevShip.vx_f3
-        ship.vy_f3 = prevShip.vy_f3
-        ship.angle = prevShip.angle
-        ship.angleTarget = prevShip.angleTarget
+    if buttonB.justPressed() and not myShip.gateLocked:
+        prevShip = myShip
+        myShip = myShip2 if myShip == myShip1 else myShip1
+        myShip.px_f3 = prevShip.px_f3
+        myShip.py_f3 = prevShip.py_f3
+        myShip.vx_f3 = prevShip.vx_f3
+        myShip.vy_f3 = prevShip.vy_f3
+        myShip.angle = prevShip.angle
+        myShip.angleTarget = prevShip.angleTarget
+        ships.remove(prevShip)
+        ships.append(myShip)
 
-    ship.updateContainer()
+    for ship in ships:
+        ship.updateContainer()
 
-    ship.speedLimited = False
-    ship.dirSpeedLimited = False
-    if ship.container:
-        container = ship.container
-        for objDirSlowZone in container.dirSlowZones:
-            x, y, w, h, dir = objDirSlowZone
-            Zones.dirSpeedLimit(ship, 6, x, y, w, h, dir)
-        for objSlowZone in container.slowZones:
-            x, y, w, h = objSlowZone
-            Zones.speedLimit(ship, 6, x, y, w, h)
-        for objScanner in container.scanners:
-            x, y, w, h = objScanner
-            Zones.speedLimit(ship, 4, x-5, y-5, w+10, h+10)
+        ship.speedLimited = False
+        ship.dirSpeedLimited = False
+        if ship.container:
+            container = ship.container
+            for objDirSlowZone in container.dirSlowZones:
+                x, y, w, h, dir = objDirSlowZone
+                Zones.dirSpeedLimit(ship, 6, x, y, w, h, dir)
+            for objSlowZone in container.slowZones:
+                x, y, w, h = objSlowZone
+                Zones.speedLimit(ship, 6, x, y, w, h)
+            for objScanner in container.scanners:
+                x, y, w, h = objScanner
+                Zones.speedLimit(ship, 4, x-5, y-5, w+10, h+10)
 
-        ship.angleLocked = False
-        for objDock in container.docks:
-            x, y, dir = objDock
-            Zones.angleLock(ship, ((dir+1) & 0b11)*90, x-20, y-10, 40, 20)
-        for objPad in container.pads:
-            x, y, dir = objPad
-            Zones.angleLock(ship, ship.angleTarget, x-8, y-8, 16, 16)
+            # ship.angleLocked = False
+            # for objDock in container.docks:
+            #     _, x, y, dir = objDock
+            #     Zones.angleLock(ship, ((dir+1) & 0b11)*90, x-20, y-10, 40, 20)
+            # for objPad in container.pads:
+            #     _, x, y, dir = objPad
+            #     Zones.angleLock(ship, ship.angleTarget, x-8, y-8, 16, 16)
 
-        for objGate in container.gates:
-            Zones.gateLock(ship, objGate, 5 << 3)
+            # for objGate in container.gates:
+            #     Zones.gateLock(ship, objGate, 5 << 3)
 
-    ship.inputButtons()
-    ship.moveFrame()
+        if ship.autopilot:
+            ship.inputAutopilot()
+        elif ship == myShip:
+            ship.inputButtons()
 
-    if not camLock:
-        camX = (ship.px_f3 >> 3) - 36 + (ship.vx_f3 >> 3)
-        camY = (ship.py_f3 >> 3) - 20 + (ship.vy_f3 >> 3)
+        ship.moveFrame()
+
+    if camDolly:
+        camX = camDollyX1 + \
+            (camDollyFrame * (camDollyX2-camDollyX1)) // camDollyTime
+        camY = camDollyY1 + \
+            (camDollyFrame * (camDollyY2-camDollyY1)) // camDollyTime
+        camDollyFrame += 1
+        if camDollyFrame > camDollyTime:
+            camDolly = False
+    elif not camLock:
+        camX = (myShip.px_f3 >> 3) - 36 + (myShip.vx_f3 >> 3)
+        camY = (myShip.py_f3 >> 3) - 20 + (myShip.vy_f3 >> 3)
 
     Container.updateVisible(camX, camY, containers)
 
@@ -750,7 +1076,8 @@ while True:
             text, x, y, dir = objText
             blitText(buffer, font4x4, text, x-camX, y-camY, dir)
 
-    ship.render(camX, camY)
+    for ship in ships:
+        ship.render(camX, camY)
 
     Scanner.update()
     for container in containers:
@@ -761,20 +1088,20 @@ while True:
             x, y, w, h = objScanner
             Scanner.render(x-camX, y-camY, w, h)
 
-        for objGate in container.gates:
-            _, x, y, dir = objGate
-            if dir & 0b1:
-                imp, iw, ih = impGateH
-            else:
-                imp, iw, ih = impGateV
-            blit(buffer, imp, x-camX-(iw >> 1), y-camY-(ih >> 1), iw, ih)
+        # for objGate in container.gates:
+        #     _, x, y, dir = objGate
+        #     if dir & 0b1:
+        #         imp, iw, ih = impGateH
+        #     else:
+        #         imp, iw, ih = impGateV
+        #     blit(buffer, imp, x-camX-(iw >> 1), y-camY-(ih >> 1), iw, ih)
 
     postShading(buffer, shader, lightAngle)
     display(buffer)
     perfStop()
 
-    perfRender()
+    # perfRender()
     update()
 
-    if ship.gateLocked and not ship.gateEnter and ship.gateDistance_f3 > (36 << 3):
+    if myShip.gateLocked and not myShip.gateEnter and myShip.gateDistance_f3 > (36 << 3):
         GateTravel.loop()

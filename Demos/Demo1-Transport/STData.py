@@ -1,6 +1,8 @@
 import struct
 from array import array
 import gc
+import builtins
+from collections import deque
 
 
 class PackReader:
@@ -33,7 +35,7 @@ class PackReader:
         worldData = sectionData.decode()
         worldLines = worldData.split('\n')
 
-        name = worldLines[0]
+        key = worldLines[0]
 
         conData = []
         for line in worldLines[1:]:
@@ -42,13 +44,15 @@ class PackReader:
                       for field in fields]
             conData.append(tuple(fields))
 
-        area = Area(name)
+        area = Area(key)
         for cd in conData:
             cName, cx, cy, cw, ch = cd
             container = self.containerLookup[cName] if cName in self.containerLookup else None
             area.initContainer(cx, cy, cw, ch, container)
 
-        self.areaLookup[name] = area
+        area.buildNavGraph()
+
+        self.areaLookup[key] = area
         return area
 
     def loadAreas(self, count):
@@ -87,9 +91,26 @@ class PackReader:
         imgSectionData = self.readSection()
 
         imgWidth, imgHeight = struct.unpack('HH', imgSectionData[:4])
-        imgBuffer = imgSectionData[4:]
+        imgSize = imgWidth * (8 * ((imgHeight + 7) // 8))
+        imgBuffer = imgSectionData[4:4+imgSize]
 
         return imgBuffer, imgWidth, imgHeight
+
+    def readIMPFrames(self):
+        imgSectionData = self.readSection()
+
+        imgWidth, imgHeight, frameCount = struct.unpack(
+            'HHB', imgSectionData[:5])
+        imgSize = imgWidth * (8 * ((imgHeight + 7) // 8))
+        imgBuffers = []
+        o1 = 5
+        o2 = o1 + imgSize
+        for _ in range(frameCount):
+            imgBuffers.append(imgSectionData[o1:o2])
+            o1 = o2
+            o2 += imgSize
+
+        return imgBuffers, imgWidth, imgHeight, frameCount
 
     def readShader(self):
         shaderData = self.readSection()
@@ -123,42 +144,102 @@ class PackReader:
 
         system = System()
 
-        for routeID, name, x, y in areaData:
-            area = self.areaLookup[name]
-            system.initArea(routeID, x, y, area)
+        for label, key, code, x, y in areaData:
+            area = self.areaLookup[key]
+            system.initArea(label, code, x, y, area)
 
-        for srcAreaRouteID, srcGate, dstAreaRouteID, dstGate, time in routeData:
-            srcArea = system.areas[srcAreaRouteID]
-            dstArea = system.areas[dstAreaRouteID]
-            system.initRoute(srcArea, srcGate, dstArea, dstGate, time)
+        for srcAreaCode, srcGateCode, dstAreaCode, dstGateCode, time in routeData:
+            srcArea = system.areaLookup[srcAreaCode]
+            dstArea = system.areaLookup[dstAreaCode]
+            system.initRoute(srcArea, srcGateCode, dstArea, dstGateCode, time)
+
+        system.buildGateDestinations()
 
         return system
 
 
 class System:
     def __init__(self):
-        self.areas = {}
+        self.areaLookup = {}
+        self.areas = []
 
-    def initArea(self, routeID, x, y, area):
-        area.initSystemCoords(x, y)
-        self.areas[routeID] = area
+    def initArea(self, label, code, x, y, area):
+        area.initFromSystem(label, code, x, y)
+        self.areaLookup[code] = area
+        self.areas.append(area)
 
-    def initRoute(self, srcArea, srcGate, dstArea, dstGate, time):
-        srcArea.initRoute(srcGate, dstArea, dstGate, time)
+    def initRoute(self, srcArea, srcGateCode, dstArea, dstGateCode, time):
+        srcArea.initGateRoute(srcGateCode, dstArea, dstGateCode, time)
+
+    def buildGateDestinations(self):
+        search = deque((), 64)
+        for area in self.areas:
+            # print("Building Gate Destinations For", area.code)
+            search.append((area, 0))
+            while len(search) > 0:
+                searchArea, totalTime = search.popleft()
+                # print(searchArea.code, totalTime)
+                for _, prevArea, prevGateCode,  time in searchArea.gateReverseRoutes:
+                    prevTotalTime = totalTime + time
+                    # print("\t", prevGateCode, prevArea.code, prevTotalTime)
+                    if prevArea != area and prevArea.initGateDestination(prevGateCode, area, prevTotalTime):
+                        # print("\t\t***")
+                        search.append((prevArea, prevTotalTime))
+
+
+NODE_TYPE_BASIC = const(0)
+NODE_TYPE_PAD = const(1)
+NODE_TYPE_DOCK = const(2)
+NODE_TYPE_GATE = const(3)
+
+
+class NavPoint:
+    def __init__(self, x, y, nodeType, obj):
+        self.x = x
+        self.y = y
+        self.nodeType = nodeType
+        self.obj = obj
+
+        self.paths = []
+        self.reversePaths = []
+        self.destinations = {}
+
+    def initPath(self, navPoint, distance):
+        self.paths.append((navPoint, distance))
+        navPoint.reversePaths.append((self, distance))
+
+    def initDestination(self, code, navPoint, distance) -> bool:
+        if code in self.destinations:
+            _, prevDistance = self.destinations[code]
+            if distance >= prevDistance:
+                return False
+        self.destinations[code] = (navPoint, distance)
+        return True
 
 
 class Area:
-    def __init__(self, name):
-        self.name = name
-        self.containers = []
-        self.routes = {}
-        self.gateLookup = {}
+    def __init__(self, key):
+        self.key = key
 
-        # from system coords
+        self.containers = []
+
+        self.gateLookup = {}
+        self.gateRouteLookup = {}
+        self.gateRoutes = []
+        self.gateReverseRoutes = []
+        self.gateDestinations = {}
+
+        self.navPoints = []
+
+        # from system ID
+        self.label = None
+        self.code = None
         self.x = 0
         self.y = 0
 
-    def initSystemCoords(self, x, y):
+    def initFromSystem(self, label, code, x, y):
+        self.label = label
+        self.code = code
         self.x = x
         self.y = y
 
@@ -166,23 +247,80 @@ class Area:
         container.initAreaBounds(x, y, w, h)
         container.initObjectData()
         for gate in container.gates:
-            id, _, _, _ = gate
-            self.gateLookup[id] = gate
+            code, _, _, _ = gate
+            self.gateLookup[code] = gate
         self.containers.append(container)
 
-    def initRoute(self, srcGate, dstArea, dstGate, time):
-        self.routes[srcGate] = (dstArea, dstGate, time)
+    def initGateRoute(self, srcGateCode, dstArea, dstGateCode, time):
+        self.gateRouteLookup[srcGateCode] = (dstArea, dstGateCode, time)
+        self.gateRoutes.append((srcGateCode, dstArea, dstGateCode, time))
+        dstArea.gateReverseRoutes.append(
+            (dstGateCode, self, srcGateCode, time))
+
+    def initGateDestination(self, gateCode, area, time) -> bool:
+        code = area.code
+        if code in self.gateDestinations:
+            _, _, prevTime = self.gateDestinations[code]
+            if time >= prevTime:
+                return False
+        self.gateDestinations[code] = (gateCode, area, time)
+        return True
+
+    def buildNavGraph(self):
+        # Initialize Points
+        coordPoints = {}
+        navPoints = {}
+        for container in self.containers:
+            cid = builtins.id(container)
+            for nid, x, y, _, nodeType, obj in container.navs:
+                coord = (x, y)
+                if coord in coordPoints:
+                    navPoint = coordPoints[coord]
+                else:
+                    navPoint = NavPoint(x, y, nodeType, obj)
+                    coordPoints[coord] = navPoint
+                    self.navPoints.append(navPoint)
+                navPoints[(cid, nid)] = navPoint
+
+        # Initialize Paths
+        for container in self.containers:
+            cid = builtins.id(container)
+            for nid, x, y, navs, nodeType, obj in container.navs:
+                navPoint = navPoints[(cid, nid)]
+                for nav in navs:
+                    pathPoint = navPoints[(cid, nav)]
+                    distance = abs(navPoint.x-pathPoint.x) + \
+                        abs(navPoint.y-pathPoint.y)
+                    navPoint.initPath(pathPoint, distance)
+
+        # Initialize Destinations
+        search = deque((), 64)
+        for container in self.containers:
+            cid = builtins.id(container)
+            for nid, x, y, navs, nodeType, obj in container.navs:
+                if nodeType == NODE_TYPE_BASIC:
+                    continue
+                navPoint = navPoints[(cid, nid)]
+                code = obj[0]
+                search.append((navPoint, 0))
+                while len(search) > 0:
+                    searchPoint, totalDistance = search.popleft()
+                    for prevPoint, distance in searchPoint.reversePaths:
+                        prevTotalDistance = totalDistance + distance
+                        if prevPoint.initDestination(code, searchPoint, prevTotalDistance):
+                            search.append((prevPoint, prevTotalDistance))
 
 
 objectDefs = {
-    "DSZ": lambda con, obj: con.initDirSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4], dir=obj[5]),
-    "SZ": lambda con, obj: con.initSlowZone(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
-    "P": lambda con, obj: con.initPad(x=obj[1], y=obj[2], dir=obj[3]),
-    "D": lambda con, obj: con.initDock(x=obj[1], y=obj[2], dir=obj[3]),
-    "LT": lambda con, obj: con.initLargeText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
-    "ST": lambda con, obj: con.initSmallText(text=obj[1], x=obj[2], y=obj[3], dir=obj[4]),
-    "S": lambda con, obj: con.initScanner(x=obj[1], y=obj[2], w=obj[3], h=obj[4]),
-    "G": lambda con, obj: con.initGate(id=obj[1], x=obj[2], y=obj[3], dir=obj[4])
+    "DSZ": lambda con, obj: con.initDirSlowZone(id=obj[1], x=obj[2], y=obj[3], w=obj[4], h=obj[5], dir=obj[6]),
+    "SZ": lambda con, obj: con.initSlowZone(id=obj[1], x=obj[2], y=obj[3], w=obj[4], h=obj[5]),
+    "P": lambda con, obj: con.initPad(id=obj[1], x=obj[2], y=obj[3], code=obj[4], dir=obj[5], nav=[obj[6]]),
+    "D": lambda con, obj: con.initDock(id=obj[1], x=obj[2], y=obj[3], code=obj[4], dir=obj[5], nav=[obj[6]]),
+    "LT": lambda con, obj: con.initLargeText(id=obj[1], x=obj[2], y=obj[3], text=obj[4], dir=obj[5]),
+    "ST": lambda con, obj: con.initSmallText(id=obj[1], x=obj[2], y=obj[3], text=obj[4], dir=obj[5]),
+    "S": lambda con, obj: con.initScanner(id=obj[1], x=obj[2], y=obj[3], w=obj[4], h=obj[5]),
+    "G": lambda con, obj: con.initGate(id=obj[1], x=obj[2], y=obj[3], code=obj[4], dir=obj[5], nav=[obj[6]]),
+    "N": lambda con, obj: con.initNav(id=obj[1], x=obj[2], y=obj[3], navs=[obj[4], obj[5], obj[6]], nodeType=NODE_TYPE_BASIC),
 }
 
 
@@ -195,7 +333,6 @@ class Container:
         self.objData = objData
         self.impTiles = impTiles
 
-        self.sprites = []
         self.dirSlowZones = []
         self.slowZones = []
         self.pads = []
@@ -204,6 +341,8 @@ class Container:
         self.smallTexts = []
         self.scanners = []
         self.gates = []
+        self.navs = []
+        self.navsLookup = {}
 
         # From area bounds
         self.x1 = 0
@@ -225,33 +364,41 @@ class Container:
             if init:
                 init(self, obj)
 
-    def initSprite(self, imp, x, y):
-        self.sprites.append((imp[0], self.x1+x, self.y1+y, imp[1], imp[2]))
-
-    def initDirSlowZone(self, x, y, w, h, dir):
+    def initDirSlowZone(self, id, x, y, w, h, dir):
         self.dirSlowZones.append((self.x1+x, self.y1+y, w, h, dir))
 
-    def initSlowZone(self, x, y, w, h):
+    def initSlowZone(self, id, x, y, w, h):
         self.slowZones.append((self.x1+x, self.y1+y, w, h))
 
-    def initPad(self, x, y, dir):
-        self.pads.append((self.x1+x, self.y1+y, dir))
+    def initPad(self, id, x, y, code, dir, nav):
+        pad = (code, self.x1+x, self.y1+y, dir)
+        self.pads.append(pad)
+        self.initNav(id, x, y, nav, NODE_TYPE_PAD, pad)
 
-    def initDock(self, x, y, dir):
-        self.docks.append((self.x1+x, self.y1+y, dir))
+    def initDock(self, id, x, y, code, dir, nav):
+        dock = (code, self.x1+x, self.y1+y, dir)
+        self.docks.append(dock)
+        self.initNav(id, x, y, nav, NODE_TYPE_DOCK, dock)
 
-    def initLargeText(self, text, x, y, dir):
+    def initLargeText(self, id, x, y, text, dir):
         self.largeTexts.append((text, self.x1+x, self.y1+y, dir))
 
-    def initSmallText(self, text, x, y, dir):
+    def initSmallText(self, id, x, y, text, dir):
         self.smallTexts.append((text, self.x1+x, self.y1+y, dir))
 
-    def initScanner(self, x, y, w, h):
+    def initScanner(self, id, x, y, w, h):
         self.scanners.append((self.x1+x, self.y1+y, w, h))
 
-    def initGate(self, id, x, y, dir):
-        gate = (id, self.x1+x, self.y1+y, dir)
+    def initGate(self, id, x, y, code, dir, nav):
+        gate = (code, self.x1+x, self.y1+y, dir)
         self.gates.append(gate)
+        self.initNav(id, x, y, nav, NODE_TYPE_GATE, gate)
+
+    def initNav(self, id, x, y, navs, nodeType, obj=None):
+        navs = [n for n in navs if n > 0]
+        nav = (id, self.x1+x, self.y1+y, navs, nodeType, obj)
+        self.navs.append(nav)
+        self.navsLookup[id] = nav
 
     @staticmethod
     @micropython.native

@@ -3,6 +3,7 @@
  <objectgroup id="2" name="Object Layer 1" offsetx="2" offsety="3">
   <object id="1" name="Alpha" x="0" y="0">
    <properties>
+    <property name="Code" value="AAA"/>
     <property name="GateE1" type="class" propertytype="GateTravel">
      <properties>
       <property name="Arrival" value="S1"/>
@@ -16,6 +17,7 @@
   </object>
   <object id="15" name="Beta" x="16" y="-16">
    <properties>
+    <property name="Code" value="BBB"/>
     <property name="GateN1" type="class" propertytype="GateTravel">
      <properties>
       <property name="Arrival" value="S1"/>
@@ -36,6 +38,7 @@
   </object>
   <object id="19" name="Gamma" x="16" y="-40">
    <properties>
+    <property name="Code" value="GGG"/>
     <property name="GateS1" type="class" propertytype="GateTravel">
      <properties>
       <property name="Arrival" value="N1"/>

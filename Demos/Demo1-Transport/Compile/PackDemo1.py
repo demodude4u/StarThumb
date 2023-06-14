@@ -1,5 +1,3 @@
-import sys
-
 from PackAssets import PackWriter
 
 pack = PackWriter()
@@ -25,6 +23,16 @@ pack.writeSplitImage("Ship.png")
 
 pack.writeSplitImage("Ship2Sm.png")
 pack.writeSplitImage("Ship2.png")
+
+pack.writeSplitImage("ShipSkull.png")
+
+pack.writeSplitImage("ShipMF.png")
+
+pack.writeSplitImage("ShipThumb.png")
+
+pack.writeSplitImage("ShipNyan.png", frames=6)
+
+pack.writeSplitImage("Logo32.png")
 
 pack.cd = "../Tiled/"
 
