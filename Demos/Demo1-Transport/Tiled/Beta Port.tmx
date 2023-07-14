@@ -110,7 +110,7 @@
    <point/>
   </object>
  </objectgroup>
- <objectgroup id="10" name="References" offsetx="1" offsety="0">
+ <objectgroup id="10" name="References">
   <object id="55" name="1x" x="-19" y="-41" width="72" height="40"/>
  </objectgroup>
 </map>

@@ -1,5 +1,5 @@
 from sys import path as syspath  # NOQA
-syspath.insert(0, '/Games/DemoST1Transport')  # NOQA
+syspath.insert(0, '/Games/TestShipRoll')  # NOQA
 
 import math
 import gc

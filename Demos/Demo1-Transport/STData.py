@@ -246,9 +246,9 @@ class Area:
     def initContainer(self, x, y, w, h, container):
         container.initAreaBounds(x, y, w, h)
         container.initObjectData()
+        container.buildChunks()
         for gate in container.gates:
-            code, _, _, _ = gate
-            self.gateLookup[code] = gate
+            self.gateLookup[gate.code] = gate
         self.containers.append(container)
 
     def initGateRoute(self, srcGateCode, dstArea, dstGateCode, time):
@@ -272,22 +272,22 @@ class Area:
         navPoints = {}
         for container in self.containers:
             cid = builtins.id(container)
-            for nid, x, y, _, nodeType, obj in container.navs:
-                coord = (x, y)
+            for n in container.navs:
+                coord = (n.x, n.y)
                 if coord in coordPoints:
                     navPoint = coordPoints[coord]
                 else:
-                    navPoint = NavPoint(x, y, nodeType, obj)
+                    navPoint = NavPoint(n.x, n.y, n.nodeType, n.obj)
                     coordPoints[coord] = navPoint
                     self.navPoints.append(navPoint)
-                navPoints[(cid, nid)] = navPoint
+                navPoints[(cid, n.id)] = navPoint
 
         # Initialize Paths
         for container in self.containers:
             cid = builtins.id(container)
-            for nid, x, y, navs, nodeType, obj in container.navs:
-                navPoint = navPoints[(cid, nid)]
-                for nav in navs:
+            for n in container.navs:
+                navPoint = navPoints[(cid, n.id)]
+                for nav in n.navs:
                     pathPoint = navPoints[(cid, nav)]
                     distance = abs(navPoint.x-pathPoint.x) + \
                         abs(navPoint.y-pathPoint.y)
@@ -297,11 +297,11 @@ class Area:
         search = deque((), 64)
         for container in self.containers:
             cid = builtins.id(container)
-            for nid, x, y, navs, nodeType, obj in container.navs:
-                if nodeType == NODE_TYPE_BASIC:
+            for n in container.navs:
+                if n.nodeType == NODE_TYPE_BASIC:
                     continue
-                navPoint = navPoints[(cid, nid)]
-                code = obj[0]
+                navPoint = navPoints[(cid, n.id)]
+                code = n.obj.code
                 search.append((navPoint, 0))
                 while len(search) > 0:
                     searchPoint, totalDistance = search.popleft()
@@ -344,6 +344,11 @@ class Container:
         self.navs = []
         self.navsLookup = {}
 
+        # From build chunks
+        self.chunks = None
+        self.chunkColumns = 0
+        self.chunkRows = 0
+
         # From area bounds
         self.x1 = 0
         self.y1 = 0
@@ -364,41 +369,132 @@ class Container:
             if init:
                 init(self, obj)
 
+    class DirZone:
+        def __init__(self, x, y, w, h, dir):
+            self.x = x
+            self.y = y
+            self.w = w
+            self.h = h
+            self.dir = dir
+
     def initDirSlowZone(self, id, x, y, w, h, dir):
-        self.dirSlowZones.append((self.x1+x, self.y1+y, w, h, dir))
+        self.dirSlowZones.append(self.DirZone(self.x1+x, self.y1+y, w, h, dir))
 
     def initSlowZone(self, id, x, y, w, h):
-        self.slowZones.append((self.x1+x, self.y1+y, w, h))
+        self.slowZones.append(self.DirZone(
+            self.x1+x, self.y1+y, w, h, dir=None))
+
+    def initScanner(self, id, x, y, w, h):
+        self.scanners.append(self.DirZone(
+            self.x1+x, self.y1+y, w, h, dir=None))
+
+    # TODO combine with NavPoint somehow
+    class Nav:
+        def __init__(self, id, x, y, navs, nodeType, obj):
+            self.id = id
+            self.x = x
+            self.y = y
+            self.navs = navs
+            self.nodeType = nodeType
+            self.obj = obj
+
+    def initNav(self, id, x, y, navs, nodeType, obj=None):
+        navs = [n for n in navs if n > 0]
+        nav = self.Nav(id, self.x1+x, self.y1+y, navs, nodeType, obj)
+        self.navs.append(nav)
+        self.navsLookup[id] = nav
+
+    class CodePoint:
+        def __init__(self, code, x, y, dir):
+            self.code = code
+            self.x = x
+            self.y = y
+            self.dir = dir
 
     def initPad(self, id, x, y, code, dir, nav):
-        pad = (code, self.x1+x, self.y1+y, dir)
+        pad = self.CodePoint(code, self.x1+x, self.y1+y, dir)
         self.pads.append(pad)
         self.initNav(id, x, y, nav, NODE_TYPE_PAD, pad)
 
     def initDock(self, id, x, y, code, dir, nav):
-        dock = (code, self.x1+x, self.y1+y, dir)
+        dock = self.CodePoint(code, self.x1+x, self.y1+y, dir)
         self.docks.append(dock)
         self.initNav(id, x, y, nav, NODE_TYPE_DOCK, dock)
 
-    def initLargeText(self, id, x, y, text, dir):
-        self.largeTexts.append((text, self.x1+x, self.y1+y, dir))
-
-    def initSmallText(self, id, x, y, text, dir):
-        self.smallTexts.append((text, self.x1+x, self.y1+y, dir))
-
-    def initScanner(self, id, x, y, w, h):
-        self.scanners.append((self.x1+x, self.y1+y, w, h))
-
     def initGate(self, id, x, y, code, dir, nav):
-        gate = (code, self.x1+x, self.y1+y, dir)
+        gate = self.CodePoint(code, self.x1+x, self.y1+y, dir)
         self.gates.append(gate)
         self.initNav(id, x, y, nav, NODE_TYPE_GATE, gate)
 
-    def initNav(self, id, x, y, navs, nodeType, obj=None):
-        navs = [n for n in navs if n > 0]
-        nav = (id, self.x1+x, self.y1+y, navs, nodeType, obj)
-        self.navs.append(nav)
-        self.navsLookup[id] = nav
+    class DisplayText:
+        def __init__(self, text, x, y, dir):
+            self.text = text
+            self.x = x
+            self.y = y
+            self.dir = dir
+
+    def initLargeText(self, id, x, y, text, dir):
+        self.largeTexts.append(self.DisplayText(
+            text, self.x1+x, self.y1+y, dir))
+
+    def initSmallText(self, id, x, y, text, dir):
+        self.smallTexts.append(self.DisplayText(
+            text, self.x1+x, self.y1+y, dir))
+
+    def buildChunks(self):
+        self.chunkColumns = (self.x2-self.x1+63) >> 6
+        self.chunkRows = (self.y2-self.y1+63) >> 6
+
+        # TODO instead determine chunk ranges from object bounds to load faster
+        self.chunks = [None] * (self.chunkColumns * self.chunkRows)
+
+        def addChunkObjects(containerList, chunkList, chunkBounds, objectBoundsFunc):
+            cx1, cy1, cx2, cy2 = chunkBounds
+            objCount = 0
+            for o in containerList:
+                ox1, oy1, ox2, oy2 = objectBoundsFunc(o)
+                if ox2 <= cx1 or oy2 <= cy1 or ox1 >= cx2 or oy1 >= cy2:
+                    continue
+                chunkList.append(o)
+                objCount += 1
+            return objCount
+
+        def convert(x, y, w, h):
+            return (x-self.x1, y-self.y1, x+w, y+h)
+
+        def convertGate(x, y, dir):
+            if dir == 0:
+                x, y, w, h = x, y - 16, 8, 32
+            elif dir == 1:
+                x, y, w, h = x - 16, y, 32, 8
+            elif dir == 2:
+                x, y, w, h = x - 8, y - 16, 8, 32
+            else:
+                x, y, w, h = x - 16, y - 8, 32, 8
+            return convert(x, y, w, h)
+
+        for cx in range(self.chunkColumns):
+            for cy in range(self.chunkRows):
+                chunk = ContainerChunk()
+                cx1, cy1 = cx*64, cy*64
+                cx2, cy2 = cx1+64, cy1+64
+                chunkBounds = (cx1, cy1, cx2, cy2)
+                objCount = 0
+                objCount += addChunkObjects(self.dirSlowZones, chunk.dirSlowZones,
+                                            chunkBounds, lambda o: convert(o.x, o.y, o.w, o.h))
+                objCount += addChunkObjects(self.slowZones, chunk.slowZones,
+                                            chunkBounds, lambda o: convert(o.x, o.y, o.w, o.h))
+                objCount += addChunkObjects(self.pads, chunk.pads, chunkBounds,
+                                            lambda o: convert(o.x-8, o.y-8, 16, 16))
+                objCount += addChunkObjects(self.docks, chunk.docks, chunkBounds,
+                                            lambda o: convert(o.x-20, o.y-10, 40, 20))
+                objCount += addChunkObjects(self.scanners, chunk.scanners, chunkBounds,
+                                            lambda o: convert(o.x-5, o.y-5, o.w+10, o.h+10))
+                objCount += addChunkObjects(self.gates, chunk.gates, chunkBounds,
+                                            lambda o: convertGate(o.x, o.y, o.dir))
+                if not objCount:
+                    chunk = None
+                self.chunks[cy*self.chunkColumns+cx] = chunk
 
     @staticmethod
     @micropython.native
@@ -414,6 +510,16 @@ class Container:
                 container.visible = False
             else:
                 container.visible = True
+
+
+class ContainerChunk:
+    def __init__(self):
+        self.dirSlowZones = []
+        self.slowZones = []
+        self.pads = []
+        self.docks = []
+        self.scanners = []
+        self.gates = []
 
 
 class Font:

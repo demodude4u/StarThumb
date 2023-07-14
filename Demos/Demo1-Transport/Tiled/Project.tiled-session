@@ -26,55 +26,55 @@
             "scale": 8,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 52,
-                "y": 32
+                "x": 52.0625,
+                "y": 31.9375
             }
         },
         "Alpha Port.tmx": {
             "expandedObjectLayers": [
-                2,
-                10
+                10,
+                2
             ],
             "scale": 5.5,
-            "selectedLayer": 1,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 84,
-                "y": 64
+                "x": 91.54545454545455,
+                "y": 55.90909090909092
             }
         },
         "Beta Connector.tmx": {
             "expandedObjectLayers": [
-                2,
-                10
+                10,
+                2
             ],
             "scale": 8,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 32,
-                "y": 40
+                "x": 31.9375,
+                "y": 39.9375
             }
         },
         "Beta Gates.tmx": {
             "expandedObjectLayers": [
                 2
             ],
-            "scale": 5.5,
-            "selectedLayer": 1,
+            "scale": 4,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 84.81818181818181,
-                "y": 112.0909090909091
+                "x": 105.375,
+                "y": 132.375
             }
         },
         "Beta Port.tmx": {
             "expandedObjectLayers": [
-                2,
-                10
+                10,
+                2
             ],
             "scale": 4,
-            "selectedLayer": 1,
+            "selectedLayer": 2,
             "viewCenter": {
-                "x": 32.875,
-                "y": 56.125
+                "x": 41.125,
+                "y": 34.375
             }
         },
         "Gamma Connector.tmx": {
@@ -92,8 +92,8 @@
             "scale": 5.5,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 31.999999999999993,
-                "y": 52
+                "x": 31.36363636363636,
+                "y": -2.818181818181813
             }
         },
         "Gamma Port.tmx": {
@@ -103,8 +103,8 @@
             "scale": 5.5,
             "selectedLayer": 1,
             "viewCenter": {
-                "x": 79.36363636363637,
-                "y": 126.63636363636363
+                "x": 71.18181818181819,
+                "y": 75.36363636363636
             }
         },
         "Map.tmx": {
@@ -122,8 +122,8 @@
             "scale": 131.93125,
             "selectedLayer": 0,
             "viewCenter": {
-                "x": 3.994504713629257,
-                "y": 3.9945047136292575
+                "x": 4.0058742716376905,
+                "y": 3.9982945662987346
             }
         },
         "Station8.tsx": {
@@ -161,7 +161,6 @@
         "Alpha Port.tmx",
         "Beta Port.tmx",
         "Beta Gates.tmx",
-        "Beta Connector.tmx",
         "Gamma Port.tmx",
         "Gamma Gate.tmx",
         "Star System.tmx",
@@ -176,9 +175,9 @@
         "Star System.tmx",
         "Gamma Gate.tmx",
         "Gamma Port.tmx",
-        "Beta Connector.tmx",
         "Beta Gates.tmx",
         "Beta Port.tmx",
+        "Beta Connector.tmx",
         "Alpha Connector.tmx",
         "Gamma Connector.tmx",
         "Map.tmx"

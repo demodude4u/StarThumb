@@ -45,7 +45,7 @@ with PackReader("/Games/DemoST1Transport/Demo1.pack") as pack:
 pack.file = None
 pack = None
 gc.collect()
-# print("After pack:",gc.mem_free())
+print("After pack:", gc.mem_free())
 
 from thumbyButton import buttonA, buttonB, buttonU, buttonD, buttonL, buttonR  # NOQA
 
@@ -131,11 +131,13 @@ class Ship:
         self.gateSpeed_f3 = 0
         self.gateDistance_f3 = 0
         self.container = None
+        self.chunk = None
         self.autopilot = False
         self.apTargetAreaCode = None
         self.apTargetDestinationCode = None
         self.apCurrentDestinationCode = None
         self.apCurrentPoint = None
+        self.apSlowdown = False
         self.apNextPoint = None
 
         if len(impShip) < 4:
@@ -172,6 +174,38 @@ class Ship:
         self.inputX_f3 = inputX_f3
         self.inputY_f3 = inputY_f3
 
+    def findAutopilotDestination(self):
+        if area.code == self.apTargetAreaCode:
+            if self.apTargetDestinationCode:
+                self.apCurrentDestinationCode = self.apTargetDestinationCode
+            else:  # Find a Dock or Pad
+                if self.sizeClass == SHIP_SIZECLASS_SMALL:
+                    destinationCodeChoices = [
+                        np.obj.code for np in area.navPoints if np.nodeType == NODE_TYPE_PAD]
+                else:
+                    destinationCodeChoices = [
+                        np.obj.code for np in area.navPoints if np.nodeType == NODE_TYPE_DOCK]
+                self.apCurrentDestinationCode = destinationCodeChoices[random.randrange(
+                    len(destinationCodeChoices))]
+        else:  # Find the correct Gate
+            # print("Finding Gate towards", self.apTargetAreaCode)
+            # for k, v in area.gateDestinations.items():
+            #     print("\t", k, " ==> ", v[0], v[1].code, v[2])
+            self.apCurrentDestinationCode = area.gateDestinations[self.apTargetAreaCode][0]
+        # print("Target Destination", self.apCurrentDestinationCode)
+
+    @staticmethod
+    def findAutopilotNearestPoint(x, y):
+        nearestPoint = None
+        nearestDistance = -1
+        for navPoint in area.navPoints:
+            distance = abs(x - navPoint.x) + abs(y - navPoint.y)
+            if not nearestPoint or distance < nearestDistance:
+                nearestPoint = navPoint
+                nearestDistance = distance
+        return nearestPoint
+
+    @micropython.native
     def inputAutopilot(self):
         if not self.autopilot:
             self.inputX_f3 = 0
@@ -183,35 +217,11 @@ class Ship:
 
         # Find Current Destination (Destination Code)
         if not self.apCurrentDestinationCode:
-            if area.code == self.apTargetAreaCode:
-                if self.apTargetDestinationCode:
-                    self.apCurrentDestinationCode = self.apTargetDestinationCode
-                else:  # Find a Dock or Pad
-                    if self.sizeClass == SHIP_SIZECLASS_SMALL:
-                        destinationCodeChoices = [
-                            np.obj[0] for np in area.navPoints if np.nodeType == NODE_TYPE_PAD]
-                    else:
-                        destinationCodeChoices = [
-                            np.obj[0] for np in area.navPoints if np.nodeType == NODE_TYPE_DOCK]
-                    self.apCurrentDestinationCode = destinationCodeChoices[random.randrange(
-                        len(destinationCodeChoices))]
-            else:  # Find the correct Gate
-                # print("Finding Gate towards", self.apTargetAreaCode)
-                # for k, v in area.gateDestinations.items():
-                #     print("\t", k, " ==> ", v[0], v[1].code, v[2])
-                self.apCurrentDestinationCode = area.gateDestinations[self.apTargetAreaCode][0]
-            # print("Target Destination", self.apCurrentDestinationCode)
+            self.findAutopilotDestination()
 
         # Find Nearest Point
         if not self.apCurrentPoint:
-            nearestPoint = None
-            nearestDistance = -1
-            for navPoint in area.navPoints:
-                distance = abs(sx - navPoint.x) + abs(sy - navPoint.y)
-                if not nearestPoint or distance < nearestDistance:
-                    nearestPoint = navPoint
-                    nearestDistance = distance
-            self.apCurrentPoint = nearestPoint
+            self.apCurrentPoint = Ship.findAutopilotNearestPoint(sx, sy)
 
         navPoint = self.apCurrentPoint
         nx = navPoint.x
@@ -222,22 +232,10 @@ class Ship:
         adx = abs(dx)
         ady = abs(dy)
 
-        nextNavPoint = self.apNextPoint
-        if nextNavPoint:
-            dx2 = nextNavPoint.x - nx
-            dy2 = nextNavPoint.y - ny
-            # Checks if heading same direction
-            if (dx * dx2 > 0 or dy * dy2 > 0) and (abs(dx) > abs(dy) == abs(dx2) > abs(dy2)):
-                slowdown = False
-            else:
-                slowdown = True
-        else:
-            slowdown = True
-
-        avx_f3 = abs(ship.vx_f3)
-        avy_f3 = abs(ship.vy_f3)
-
+        slowdown = self.apSlowdown
         if slowdown:
+            avx_f3 = abs(ship.vx_f3)
+            avy_f3 = abs(ship.vy_f3)
             if avx_f3 or avy_f3:
                 if avx_f3 > avy_f3:
                     stopDistance = (
@@ -275,17 +273,32 @@ class Ship:
         if abs(dx) <= 6 and abs(dy) <= 6:
             # print("Next Point")
             if navPoint.nodeType:  # Not Basic
-                code = navPoint.obj[0]
+                code = navPoint.obj.code
                 if area.code == self.apTargetAreaCode and code == self.apCurrentDestinationCode:
                     self.apCurrentPoint = None
                     self.apCurrentDestinationCode = None
                     self.autopilot = False
             if self.autopilot:
-                self.apCurrentPoint = navPoint.destinations[self.apCurrentDestinationCode][0]
-                if not self.apCurrentPoint.nodeType:  # Basic
-                    self.apNextPoint = self.apCurrentPoint.destinations[self.apCurrentDestinationCode][0]
+                # TODO find a faster way instead of using string keys
+                pp = navPoint
+                cp = navPoint.destinations[self.apCurrentDestinationCode][0]
+                self.apCurrentPoint = cp
+                if not cp.nodeType:  # Is Basic
+                    np = cp.destinations[self.apCurrentDestinationCode][0]
+                    if np:
+                        cdx = cp.x - pp.x
+                        cdy = cp.y - pp.y
+                        ndx = np.x - cp.x
+                        ndy = np.y - cp.y
+                        # Checks if heading same direction
+                        if (cdx * ndx > 0 or cdy * ndy > 0) and (abs(cdx) > abs(cdy) == abs(ndx) > abs(ndy)):
+                            self.apSlowdown = False
+                        else:
+                            self.apSlowdown = True
+                    else:
+                        self.apSlowdown = False
                 else:
-                    self.apNextPoint = None
+                    self.apSlowdown = False
 
     @micropython.native
     def updateContainer(self):
@@ -298,8 +311,13 @@ class Ship:
             cy2 = container.y2
             if cx1 <= sx < cx2 and cy1 <= sy < cy2:
                 self.container = container
+                # print(sx, sy, "|", cx1, cy1, cx2, cy2, "|", (
+                #     (sy-cy1) >> 6)*container.chunkColumns+((sx-cx1) >> 6), len(container.chunks) )
+                self.chunk = container.chunks[(
+                    (sy-cy1) >> 6)*container.chunkColumns+((sx-cx1) >> 6)]
                 return
         self.container = None
+        self.chunk = None
 
     @micropython.native
     def moveFrame(self):
@@ -661,7 +679,7 @@ class Zones:
 
         px = int(ship.px_f3) >> 3
         py = int(ship.py_f3) >> 3
-        _, gx, gy, gdir = gate
+        gx, gy, gdir = gate.x, gate.y, gate.dir
         if gdir == 0:
             x, y, w, h = gx, gy - 16, 8, 32
         elif gdir == 1:
@@ -969,7 +987,7 @@ scripted = True
 gc.collect()
 
 while True:
-    perfStart()
+    perfStart(0)
 
     # TODO TESTING!
     # if not myShip.autopilot:
@@ -983,7 +1001,7 @@ while True:
         #     pass
         if scriptFrame > 0 or buttonR.justPressed():
             scriptFrame += 1
-            # print(scriptFrame)
+            print(scriptFrame)
         while True:
             if scriptIndex >= len(script):
                 # scripted = False
@@ -1009,40 +1027,46 @@ while True:
         ships.remove(prevShip)
         ships.append(myShip)
 
-    for ship in ships:
-        ship.updateContainer()
+    # TODO change over old tuples to the classes
 
+    for ship in ships:
+        perfStart(1)
+        ship.updateContainer()
+        perfStop(1)
+
+        perfStart(2)
         ship.speedLimited = False
         ship.dirSpeedLimited = False
-        if ship.container:
-            container = ship.container
-            for objDirSlowZone in container.dirSlowZones:
-                x, y, w, h, dir = objDirSlowZone
-                Zones.dirSpeedLimit(ship, 6, x, y, w, h, dir)
-            for objSlowZone in container.slowZones:
-                x, y, w, h = objSlowZone
-                Zones.speedLimit(ship, 6, x, y, w, h)
-            for objScanner in container.scanners:
-                x, y, w, h = objScanner
-                Zones.speedLimit(ship, 4, x-5, y-5, w+10, h+10)
+        if ship.chunk:
+            chunk = ship.chunk
+            for o in chunk.dirSlowZones:
+                Zones.dirSpeedLimit(ship, 6, o.x, o.y, o.w, o.h, o.dir)
+            for o in chunk.slowZones:
+                Zones.speedLimit(ship, 6, o.x, o.y, o.w, o.h)
+            for o in chunk.scanners:
+                Zones.speedLimit(ship, 4, o.x-5, o.y-5, o.w+10, o.h+10)
 
-            # ship.angleLocked = False
-            # for objDock in container.docks:
-            #     _, x, y, dir = objDock
-            #     Zones.angleLock(ship, ((dir+1) & 0b11)*90, x-20, y-10, 40, 20)
-            # for objPad in container.pads:
-            #     _, x, y, dir = objPad
-            #     Zones.angleLock(ship, ship.angleTarget, x-8, y-8, 16, 16)
+            ship.angleLocked = False
+            for o in chunk.docks:
+                Zones.angleLock(ship, ((o.dir+1) & 0b11) *
+                                90, o.x-20, o.y-10, 40, 20)
+            for o in chunk.pads:
+                Zones.angleLock(ship, ship.angleTarget, o.x-8, o.y-8, 16, 16)
 
-            # for objGate in container.gates:
-            #     Zones.gateLock(ship, objGate, 5 << 3)
+            for o in chunk.gates:
+                Zones.gateLock(ship, o, 5 << 3)
+        perfStop(2)
 
+        perfStart(3)
         if ship.autopilot:
             ship.inputAutopilot()
         elif ship == myShip:
             ship.inputButtons()
+        perfStop(3)
 
+        perfStart(4)
         ship.moveFrame()
+        perfStop(4)
 
     if camDolly:
         camX = camDollyX1 + \
@@ -1068,13 +1092,11 @@ while True:
 
         blitContainerMap(buffer, container, -camX, -camY)
 
-        for objText in container.smallTexts:
-            text, x, y, dir = objText
-            blitText(buffer, font3x3, text, x-camX, y-camY, dir)
+        for o in container.smallTexts:
+            blitText(buffer, font3x3, o.text, o.x-camX, o.y-camY, o.dir)
 
-        for objText in container.largeTexts:
-            text, x, y, dir = objText
-            blitText(buffer, font4x4, text, x-camX, y-camY, dir)
+        for o in container.largeTexts:
+            blitText(buffer, font4x4, o.text, o.x-camX, o.y-camY, o.dir)
 
     for ship in ships:
         ship.render(camX, camY)
@@ -1084,23 +1106,20 @@ while True:
         if not container.visible:
             continue
 
-        for objScanner in container.scanners:
-            x, y, w, h = objScanner
-            Scanner.render(x-camX, y-camY, w, h)
+        for o in container.scanners:
+            Scanner.render(o.x-camX, o.y-camY, o.w, o.h)
 
-        # for objGate in container.gates:
-        #     _, x, y, dir = objGate
-        #     if dir & 0b1:
-        #         imp, iw, ih = impGateH
-        #     else:
-        #         imp, iw, ih = impGateV
-        #     blit(buffer, imp, x-camX-(iw >> 1), y-camY-(ih >> 1), iw, ih)
-
+        for o in container.gates:
+            if o.dir & 0b1:
+                imp, iw, ih = impGateH
+            else:
+                imp, iw, ih = impGateV
+            blit(buffer, imp, o.x-camX-(iw >> 1), o.y-camY-(ih >> 1), iw, ih)
     postShading(buffer, shader, lightAngle)
     display(buffer)
-    perfStop()
+    perfStop(0)
 
-    # perfRender()
+    perfRender()
     update()
 
     if myShip.gateLocked and not myShip.gateEnter and myShip.gateDistance_f3 > (36 << 3):
